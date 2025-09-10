@@ -7,12 +7,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css"/>
 
-  <!-- Gate: hide protected UI until authenticated -->
+  <!-- Gate: hide protected UI until authenticated as admin -->
   <style>
-    /* Nothing in .admin-gate is rendered unless body has .admin-auth */
     .admin-gate { display: none; }
     body.admin-auth .admin-gate { display: block; }
-    /* Auth card hidden when authed */
     body.admin-auth #authBox { display: none !important; }
   </style>
 
@@ -21,7 +19,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
-<body class="admin-locked">
+<body>
   <!-- Navbar -->
   <nav>
     <div class="logo">
@@ -35,26 +33,24 @@
     </ul>
   </nav>
 
-  <!-- Hamburger + UI helpers -->
   <script src="script.js" defer></script>
 
   <main style="padding:20px; padding-top:80px; max-width:1100px; margin:0 auto;">
 
-    <!-- AUTH (always visible when logged out) -->
+    <!-- AUTH (visible when logged out / not admin) -->
     <div class="card" id="authBox">
       <h1>Admin — Éclaïr</h1>
       <h2>Sign in</h2>
       <div class="row">
         <input type="email" id="email" placeholder="Admin email" autocomplete="username"/>
-        <input type="password" id="password" placeholder="Password" autocomplete="current-password"/>
+        <input type="password" id="password" placeholder="Passcode" autocomplete="current-password"/>
       </div>
-      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+      <div style="margin-top:10px;">
         <button class="btn" id="btnLogin">Sign in</button>
-        <button class="btn muted" id="btnCreate" title="Create an admin account (use once, then disable)">Create admin (once)</button>
       </div>
     </div>
 
-    <!-- DASHBOARD (hidden until authed) -->
+    <!-- DASHBOARD (only when admin) -->
     <div id="dash" class="admin-gate">
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -180,7 +176,6 @@ const dash = document.getElementById('dash');
 const email = document.getElementById('email');
 const password = document.getElementById('password');
 const btnLogin = document.getElementById('btnLogin');
-const btnCreate = document.getElementById('btnCreate');
 const btnSignOut = document.getElementById('btnSignOut');
 
 const pName = document.getElementById('pName');
@@ -197,7 +192,7 @@ const tbodyProducts = document.getElementById('tbodyProducts');
 const formTitle = document.getElementById('formTitle');
 
 let editingKey = null;
-let productsRef = null;   // will hold active listener ref
+let productsRef = null;
 let productsHandler = null;
 
 // ===== Dynamic list helpers =====
@@ -242,27 +237,11 @@ function addToppingRow(topping = {label:'', price:''}) {
   toppingsList.appendChild(row);
 }
 
-function getSizesFromUI(){ return Array.from(sizesList.querySelectorAll('.row-line')).map(r => {
-  const [labelEl, priceEl] = r.querySelectorAll('input');
-  const label = labelEl.value.trim(); const price = Number(priceEl.value || 0);
-  return label ? { label, price } : null;
-}).filter(Boolean); }
-function getFlavoursFromUI(){ return Array.from(flavoursList.querySelectorAll('.row-line')).map(r => {
-  const [labelEl] = r.querySelectorAll('input'); const label = labelEl.value.trim();
-  return label ? { label } : null;
-}).filter(Boolean); }
-function getToppingsFromUI(){ return Array.from(toppingsList.querySelectorAll('.row-line')).map(r => {
-  const [labelEl, priceEl] = r.querySelectorAll('input');
-  const label = labelEl.value.trim(); const price = Number(priceEl.value || 0);
-  return label ? { label, price } : null;
-}).filter(Boolean); }
-
 function setListsUI(p){
   sizesList.innerHTML = ''; (p.sizes||[]).forEach(addSizeRow);
   flavoursList.innerHTML = ''; (p.flavours||[]).forEach(addFlavourRow);
   toppingsList.innerHTML = ''; (p.toppings||[]).forEach(addToppingRow);
 }
-
 function clearForm() {
   editingKey = null; formTitle.textContent = 'Add / Edit product';
   pName.value = ''; pBasePrice.value = ''; pCategory.value = 'Pastries';
@@ -271,6 +250,7 @@ function clearForm() {
   btnCancelEdit.classList.add('hide');
 }
 
+// ===== Table render =====
 function renderRow(key, p) {
   const priceText = (p.sizes && p.sizes.length)
     ? ('Sizes: ' + p.sizes.map(s=>`${s.label} Rs ${s.price}`).join(', '))
@@ -317,9 +297,9 @@ function wipeAllUI() {
   pImageFile.value = ''; pPreview.src = '';
 }
 
-// ===== Secure attach/detach of DB listeners =====
+// ===== Attach / Detach Realtime listener (only when admin) =====
 function attachProductsListener() {
-  if (productsRef || productsHandler) detachProductsListener();
+  detachProductsListener();
   productsRef = db.ref('products').orderByChild('createdAt');
   productsHandler = productsRef.on('value', snap => {
     wipeTable();
@@ -332,51 +312,62 @@ function attachProductsListener() {
     }
   });
 }
-
 function detachProductsListener() {
-  if (productsRef && productsHandler) {
-    productsRef.off('value', productsHandler);
-  } else if (productsRef) {
-    productsRef.off();
-  }
+  if (productsRef && productsHandler) productsRef.off('value', productsHandler);
+  else if (productsRef) productsRef.off();
   productsRef = null; productsHandler = null;
 }
 
-// ===== Auth gate =====
+// ===== Auth Gate (admin-only) =====
+async function isUserAdmin(uid) {
+  try {
+    const snap = await db.ref('admins/' + uid).get();
+    return snap.exists() && !!snap.val();
+  } catch {
+    return false;
+  }
+}
+
 function lockDownUI() {
-  // Hide protected area, show auth, clear everything, detach listeners
   document.body.classList.remove('admin-auth');
   detachProductsListener();
   wipeAllUI();
 }
-function unlockUI() {
-  // Show protected area, hide auth, attach listeners
+
+async function unlockIfAdmin(user) {
+  const admin = await isUserAdmin(user.uid);
+  if (!admin) {
+    await auth.signOut();
+    alert('You have no right to access it.');
+    return;
+  }
   document.body.classList.add('admin-auth');
   attachProductsListener();
 }
 
-auth.onAuthStateChanged(user => {
-  if (user) { unlockUI(); }
+auth.onAuthStateChanged(async (user) => {
+  if (user) { await unlockIfAdmin(user); }
   else { lockDownUI(); }
 });
 
-// ===== Auth actions =====
-btnLogin.onclick = async () => {
+// ===== Actions =====
+document.getElementById('btnLogin').onclick = async () => {
+  const em = (email.value || '').trim();
+  const pw = (password.value || '');
+  if (!em || !pw) { alert('You have no right to access it.'); return; }
+
   try {
-    await auth.signInWithEmailAndPassword(email.value.trim(), password.value);
-  } catch(e){ alert(e.message); }
+    const { user } = await auth.signInWithEmailAndPassword(em, pw);
+    // onAuthStateChanged will handle admin check
+  } catch (e) {
+    // Do NOT reveal which part was wrong
+    alert('You have no right to access it.');
+  }
 };
 
-btnCreate.onclick = async () => {
-  try {
-    await auth.createUserWithEmailAndPassword(email.value.trim(), password.value);
-    alert('Admin created. You can sign in now.');
-  } catch(e){ alert(e.message); }
-};
+document.getElementById('btnSignOut').onclick = () => auth.signOut();
 
-btnSignOut && (btnSignOut.onclick = () => auth.signOut());
-
-// ===== Image preview + filter change =====
+// ===== Image preview & filters =====
 pImageFile.onchange = () => {
   const file = pImageFile.files?.[0];
   if (!file) return;
@@ -385,12 +376,9 @@ pImageFile.onchange = () => {
   reader.readAsDataURL(file);
 };
 
-filterCategory.onchange = () => {
-  // Re-render table from current snapshot by reattaching (simple and safe)
-  attachProductsListener();
-};
+filterCategory.onchange = () => attachProductsListener();
 
-// ===== Save product =====
+// ===== Save product (admin only; rules will enforce too) =====
 btnSave.onclick = async () => {
   try {
     const name = pName.value.trim();
@@ -422,14 +410,14 @@ btnSave.onclick = async () => {
     if (editingKey) { await db.ref(`products/${editingKey}`).update(data); }
     else { data.createdAt = Date.now(); await db.ref('products').push(data); }
     clearForm();
-  } catch (e) { alert(e.message); }
+  } catch (e) {
+    alert(e.message);
+  }
 };
 
-// Extra safety: ensure locked state at start
+// Initial lockdown (no flash)
 lockDownUI();
-
-// Detach listeners on unload
-window.addEventListener('beforeunload', detachProductsListener);
 </script>
+</main>
 </body>
 </html>
