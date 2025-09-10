@@ -9,11 +9,30 @@
   <script src="script.js" defer></script>
 
   <style>
-    /* Minimal cart styling; your style.css handles the cards/grids */
-    #cart { position:fixed; right:20px; top:20px; background:#fff; border-radius:15px; padding:15px; width:320px; max-height:90vh; overflow:auto; box-shadow:0 4px 18px rgba(0,0,0,.15); display:none; z-index:999; }
-    .cart-item { display:flex; justify-content:space-between; gap:8px; margin-bottom:8px; }
+    /* Minimal cart & modal styling; your style.css handles product cards/grid */
+    #cart { position:fixed; right:20px; top:20px; background:#fff; border-radius:15px; padding:15px; width:340px; max-height:90vh; overflow:auto; box-shadow:0 4px 18px rgba(0,0,0,.15); display:none; z-index:999; }
+    .cart-item { display:flex; justify-content:space-between; gap:8px; margin-bottom:8px; align-items:center; }
     .btn { display:inline-block; padding:10px 18px; background:#f78da7; color:#fff; border-radius:25px; text-decoration:none; cursor:pointer; font-weight:600; }
-    .btn:disabled { opacity:.6; cursor:not-allowed; }
+    .btn.small { padding:6px 12px; border-radius:14px; font-weight:600; }
+    .btn.icon { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0; }
+    .qty { display:inline-flex; align-items:center; gap:8px; }
+    .muted { color:#777; }
+
+    /* Modal */
+    .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:998; }
+    .modal { background:#fff; width:min(720px, 92vw); border-radius:16px; box-shadow:0 10px 28px rgba(0,0,0,.2); overflow:hidden; }
+    .modal header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#fff3f6; }
+    .modal .content { padding:16px; display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    .modal img { width:100%; height:220px; object-fit:cover; border-radius:12px; }
+    .choice { margin-bottom:10px; }
+    .choice h4 { margin:8px 0; }
+    .toppings { display:grid; gap:6px; max-height:160px; overflow:auto; padding-right:6px; }
+    .flex { display:flex; align-items:center; gap:10px; }
+    .right { text-align:right; }
+    @media (max-width:720px){
+      .modal .content { grid-template-columns: 1fr; }
+      .modal img { height:200px; }
+    }
   </style>
 </head>
 <body>
@@ -40,7 +59,6 @@
     </div>
 
     <h2 id="shop" style="text-align:center;">Shop</h2>
-    <!-- MOUNT POINT (required) -->
     <div id="shop-grid" class="products-grid"></div>
 
     <div style="text-align:center; margin-top:16px;">
@@ -73,13 +91,62 @@
     </div>
   </div>
 
+  <!-- Customize Modal -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <header>
+        <div class="flex">
+          <strong id="modName">Item</strong>
+          <span class="muted" id="modCategory"></span>
+        </div>
+        <button class="btn small" type="button" onclick="closeModal()">Close</button>
+      </header>
+      <div class="content">
+        <div><img id="modImage" src="" alt=""></div>
+        <div>
+          <div class="choice" id="sizeChoice" style="display:none;">
+            <h4>Size</h4>
+            <select id="modSize"></select>
+          </div>
+
+          <div class="choice" id="flavourChoice" style="display:none;">
+            <h4>Flavour</h4>
+            <select id="modFlavour"></select>
+          </div>
+
+          <div class="choice" id="toppingsChoice" style="display:none;">
+            <h4>Toppings</h4>
+            <div class="toppings" id="modToppings"></div>
+          </div>
+
+          <div class="choice">
+            <h4>Quantity</h4>
+            <div class="qty">
+              <button class="btn icon" type="button" onclick="changeQty(-1)">−</button>
+              <strong id="modQty">1</strong>
+              <button class="btn icon" type="button" onclick="changeQty(1)">+</button>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="muted">Item total</div>
+            <h3>Rs <span id="modTotal">0</span></h3>
+          </div>
+
+          <div class="right" style="margin-top:8px;">
+            <button class="btn" type="button" onclick="confirmAdd()">Add to Cart</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Firebase compat (order matters) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-  <!-- Shared logic -->
   <script>
-    // Shared Firebase init + renders + cart
+    // Firebase init (RTDB)
     (function initFirebase(){
       const firebaseConfig = {
         apiKey: "AIzaSyDnYlw01KhjWRXLhatnr9fFcXA4Q_zOs10",
@@ -95,86 +162,239 @@
       window.__DB__ = firebase.database();
     })();
 
-    // ---- Shop render (live) ----
+    // ------ Render Shop ------
+    const shop = document.getElementById('shop-grid');
+    let PRODUCTS = {};
+    function renderShop(list){
+      shop.innerHTML = list.map(p => `
+        <div class="product-card">
+          <img src="${p.image||''}" alt="${p.name||''}">
+          <h4>${p.name||''}</h4>
+          <p class="price">${
+            (p.sizes && p.sizes.length)
+              ? 'From Rs ' + Math.min(...p.sizes.map(s=>Number(s.price||0)))
+              : 'Rs ' + Number(p.basePrice||0)
+          }</p>
+          <button class="btn" onclick='openModal(${JSON.stringify(p._id)})'>Customize</button>
+        </div>
+      `).join('');
+    }
+
     function loadShop(){
-      const mount = document.getElementById('shop-grid');
-      if (!mount || !window.__DB__) return;
-      const db = window.__DB__;
+      const params = new URLSearchParams(location.search);
+      const cat = params.get('cat');
 
-      function render(list){
-        mount.innerHTML = list.map(p => `
-          <div class="product-card">
-            <img src="${p.image||''}" alt="${p.name||''}">
-            <h4>${p.name||''}</h4>
-            <p class="price">Rs ${Number(p.price||0)}</p>
-            <button class="btn" onclick='addToCart(${JSON.stringify(p.name)}, ${Number(p.price||0)})'>Add to Cart</button>
-          </div>
-        `).join('');
-      }
-
-      db.ref('products').on('value', snap => {
+      window.__DB__.ref('products').on('value', snap => {
         const obj = snap.val() || {};
-        let items = Object.values(obj).filter(p => p.visible);
-        const params = new URLSearchParams(location.search);
-        const cat = params.get('cat');
-        if (cat) items = items.filter(i => i.category === cat);
-        items.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
-        render(items);
+        // attach ids
+        const all = Object.entries(obj).map(([id, p]) => ({...p, _id:id})).filter(p=>p.visible);
+        const filtered = cat ? all.filter(i => i.category === cat) : all;
+        // sort newest first
+        filtered.sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
+        PRODUCTS = Object.fromEntries(filtered.map(p => [p._id, p]));
+        renderShop(filtered);
       });
     }
 
-    // ---- Cart logic ----
+    // ------ Modal / Customize ------
+    const backdrop = document.getElementById('modalBackdrop');
+    const modName = document.getElementById('modName');
+    const modCategory = document.getElementById('modCategory');
+    const modImage = document.getElementById('modImage');
+    const modSize = document.getElementById('modSize');
+    const sizeChoice = document.getElementById('sizeChoice');
+    const modFlavour = document.getElementById('modFlavour');
+    const flavourChoice = document.getElementById('flavourChoice');
+    const modToppings = document.getElementById('modToppings');
+    const toppingsChoice = document.getElementById('toppingsChoice');
+    const modQty = document.getElementById('modQty');
+    const modTotal = document.getElementById('modTotal');
+
+    let CURRENT = null; // { product, sizePrice, basePrice, qty, toppings:[indices], flavour }
+    function openModal(id){
+      const p = PRODUCTS[id];
+      if (!p) return;
+      CURRENT = {
+        id, name:p.name, category:p.category, image:p.image,
+        basePrice: Number(p.basePrice||0),
+        sizes: p.sizes||[],
+        flavours: p.flavours||[],
+        toppings: p.toppings||[],
+        qty: 1,
+        sizeIndex: (p.sizes && p.sizes.length) ? 0 : -1,
+        flavourIndex: (p.flavours && p.flavours.length) ? 0 : -1,
+        toppingSet: new Set()
+      };
+
+      modName.textContent = p.name||'';
+      modCategory.textContent = p.category||'';
+      modImage.src = p.image||'';
+
+      // Sizes
+      if (CURRENT.sizes.length){
+        sizeChoice.style.display = '';
+        modSize.innerHTML = CURRENT.sizes.map((s,i)=>`<option value="${i}">${s.label} — Rs ${Number(s.price||0)}</option>`).join('');
+        modSize.value = String(CURRENT.sizeIndex);
+      } else {
+        sizeChoice.style.display = 'none';
+      }
+
+      // Flavours
+      if (CURRENT.flavours.length){
+        flavourChoice.style.display = '';
+        modFlavour.innerHTML = CURRENT.flavours.map((f,i)=>`<option value="${i}">${f.label}</option>`).join('');
+        modFlavour.value = String(CURRENT.flavourIndex);
+      } else {
+        flavourChoice.style.display = 'none';
+      }
+
+      // Toppings
+      if (CURRENT.toppings.length){
+        toppingsChoice.style.display = '';
+        modToppings.innerHTML = CURRENT.toppings.map((t, i) => `
+          <label class="flex">
+            <input type="checkbox" data-top="${i}">
+            <span>${t.label} <span class="muted">(Rs ${Number(t.price||0)})</span></span>
+          </label>
+        `).join('');
+      } else {
+        toppingsChoice.style.display = 'none';
+      }
+
+      modQty.textContent = '1';
+      recalc();
+      backdrop.style.display = 'flex';
+    }
+    function closeModal(){ backdrop.style.display = 'none'; CURRENT = null; }
+
+    modSize.addEventListener('change', () => { CURRENT.sizeIndex = Number(modSize.value||0); recalc(); });
+    modFlavour.addEventListener('change', () => { CURRENT.flavourIndex = Number(modFlavour.value||0); });
+
+    modToppings.addEventListener('change', (e) => {
+      if (!e.target || !e.target.dataset.top) return;
+      const idx = Number(e.target.dataset.top);
+      if (e.target.checked) CURRENT.toppingSet.add(idx);
+      else CURRENT.toppingSet.delete(idx);
+      recalc();
+    });
+
+    function changeQty(delta){
+      if (!CURRENT) return;
+      CURRENT.qty = Math.max(1, CURRENT.qty + delta);
+      modQty.textContent = String(CURRENT.qty);
+      recalc();
+    }
+    function recalc(){
+      if (!CURRENT) return;
+      let unit = CURRENT.sizes.length
+        ? Number(CURRENT.sizes[CURRENT.sizeIndex]?.price || 0)
+        : Number(CURRENT.basePrice || 0);
+      let tops = 0;
+      CURRENT.toppingSet.forEach(i => tops += Number(CURRENT.toppings[i]?.price || 0));
+      const total = (unit + tops) * CURRENT.qty;
+      modTotal.textContent = total;
+    }
+
+    // ------ Cart ------
     let CART = [];
-    function updateCartBadge(){ const el = document.getElementById('cart-count'); if (el) el.textContent = CART.length; }
+    function addToCartLine(line){ CART.push(line); renderCart(); }
     function renderCart(){
       const itemsDiv = document.getElementById('cart-items');
       const totalEl = document.getElementById('cart-total');
-      if (!itemsDiv || !totalEl) return;
-      itemsDiv.innerHTML = '';
+      const badge = document.getElementById('cart-count');
       let total = 0;
-      CART.forEach((it, idx) => {
-        total += Number(it.price||0);
-        itemsDiv.innerHTML += `<div class="cart-item"><span>${it.name}</span><span>Rs ${it.price}</span><button onclick="removeFromCart(${idx})">❌</button></div>`;
-      });
+      itemsDiv.innerHTML = CART.map((it, idx) => {
+        const tops = it.toppings?.length ? ` + ${it.toppings.map(t=>t.label).join(', ')}` : '';
+        const opts = `${it.size ? ` (${it.size})` : ''}${it.flavour ? ` - ${it.flavour}` : ''}${tops}`;
+        const line = it.unitPrice * it.qty;
+        total += line;
+        return `
+          <div class="cart-item">
+            <div style="text-align:left;">
+              <div><b>${it.name}</b>${opts}</div>
+              <div class="muted">Rs ${it.unitPrice} × ${it.qty} = <b>Rs ${line}</b></div>
+            </div>
+            <div class="qty">
+              <button class="btn icon" onclick="decQty(${idx})">−</button>
+              <span>${it.qty}</span>
+              <button class="btn icon" onclick="incQty(${idx})">+</button>
+              <button class="btn icon" onclick="removeLine(${idx})">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
       totalEl.textContent = total;
-      updateCartBadge();
+      badge.textContent = CART.reduce((a,b)=>a+b.qty,0);
     }
-    function addToCart(name, price){ CART.push({name, price:Number(price||0)}); renderCart(); }
-    function removeFromCart(index){ CART.splice(index,1); renderCart(); }
+    function incQty(i){ CART[i].qty++; renderCart(); }
+    function decQty(i){ CART[i].qty = Math.max(1, CART[i].qty-1); renderCart(); }
+    function removeLine(i){ CART.splice(i,1); renderCart(); }
     function toggleCart(){
       const cartDiv = document.getElementById('cart');
-      if (!cartDiv) return;
       cartDiv.style.display = cartDiv.style.display==='block' ? 'none' : 'block';
       renderCart();
     }
+
+    function confirmAdd(){
+      if (!CURRENT) return;
+      const sizeObj = CURRENT.sizes.length ? CURRENT.sizes[CURRENT.sizeIndex] : null;
+      const unit = sizeObj ? Number(sizeObj.price||0) : Number(CURRENT.basePrice||0);
+      let tops = [];
+      CURRENT.toppingSet.forEach(i => { const t = CURRENT.toppings[i]; if (t) tops.push({label:t.label, price:Number(t.price||0)}) });
+      const unitPlusTops = unit + tops.reduce((s,t)=>s+(t.price||0),0);
+
+      const line = {
+        productId: CURRENT.id,
+        name: CURRENT.name,
+        size: sizeObj ? sizeObj.label : null,
+        flavour: CURRENT.flavours.length && CURRENT.flavourIndex>=0 ? CURRENT.flavours[CURRENT.flavourIndex].label : null,
+        toppings: tops,
+        unitPrice: unitPlusTops,
+        qty: CURRENT.qty
+      };
+      addToCartLine(line);
+      closeModal();
+      toggleCart();
+    }
+
+    // ------ Checkout (push to RTDB /orders) ------
     async function checkout(){
-      if (!window.__DB__) return alert("DB not ready");
-      if (CART.length === 0) return alert("Cart is empty!");
+      if (!CART.length) return alert('Cart is empty!');
       const name = (document.getElementById('customer-name')||{}).value?.trim();
       const phone = (document.getElementById('customer-phone')||{}).value?.trim();
       const method = (document.getElementById('payment-method')||{}).value || 'Pay at Pickup';
-      const phoneRegex = /^5\d{7}$/; // MU mobile
+      const phoneRegex = /^5\d{7}$/; // Mauritius mobile
       if (!name || !phoneRegex.test(phone||'')) return alert('Enter a name and a valid phone (starts with 5, 8 digits).');
+      const total = CART.reduce((s,it)=> s + it.unitPrice*it.qty, 0);
 
-      const order = { customer: { name, phone }, items: CART, paymentMethod: method, createdAt: Date.now() };
-      try{
+      const order = {
+        customer: { name, phone },
+        items: CART,
+        paymentMethod: method,
+        total,
+        createdAt: Date.now()
+      };
+
+      try {
         await window.__DB__.ref('orders').push(order);
         alert('Order placed successfully!');
-        CART = [];
-        renderCart();
-        const cartDiv = document.getElementById('cart'); if (cartDiv) cartDiv.style.display = 'none';
-        document.getElementById('customer-name').value='';
-        document.getElementById('customer-phone').value='';
-      }catch(e){ alert(e.message); }
+        CART = []; renderCart(); toggleCart();
+        document.getElementById('customer-name').value = '';
+        document.getElementById('customer-phone').value = '';
+      } catch(e){ alert(e.message); }
     }
 
-    // Expose for buttons
-    window.addToCart = addToCart;
-    window.removeFromCart = removeFromCart;
+    // expose
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.changeQty = changeQty;
+    window.confirmAdd = confirmAdd;
     window.toggleCart = toggleCart;
     window.checkout = checkout;
+    window.incQty = incQty;
+    window.decQty = decQty;
+    window.removeLine = removeLine;
 
-    // Start
     document.addEventListener('DOMContentLoaded', loadShop);
   </script>
 </body>
