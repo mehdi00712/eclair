@@ -73,7 +73,7 @@
   <!-- Featured Products (live) -->
   <section id="featured">
     <h2>Featured Products</h2>
-    <!-- removed the text line per your request -->
+    <!-- removed the extra text line -->
     <div id="featured-grid" class="products-grid"></div>
     <a href="menu.html#shop" class="btn">Shop All</a>
   </section>
@@ -127,7 +127,7 @@
     <p style="color: beige;">Éclaïr</p>
   </footer>
 
-  <!-- Your UI behaviors -->
+  <!-- Your UI behaviors (hamburger, hero vh fix, etc.) -->
   <script src="script.js"></script>
 
   <!-- Firebase compat -->
@@ -182,7 +182,7 @@
               <img src="${p.image||''}" alt="${p.name||''}" loading="lazy">
               <h4>${p.name||''}</h4>
               <p class="price">${hasSizes ? 'From ' : ''}Rs ${currency(fromPrice)}</p>
-              <a href="menu.html#shop" class="btn" style="margin-top:auto;">Order</a>
+              <a href="menu.html#shop" class="btn">Order</a>
             </div>
           `;
         }).join('');
