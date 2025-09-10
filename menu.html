@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
+  <title>Éclaïr — Full Menu</title>
+
+  <!-- Styles -->
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family:'Alice', serif; background:#ffe6e6; margin:20px; text-align:center; }
+    .btn { display:inline-block; padding:10px 20px; background:#f78da7; color:#fff; text-decoration:none; border-radius:25px; font-weight:600; margin:5px; cursor:pointer; transition:.2s; }
+    .btn:hover { background:#f25c7f; transform:scale(1.05); }
+    .menu-items { display:flex; justify-content:center; flex-wrap:wrap; gap:15px; margin-bottom:40px; }
+    .item, .product-card { background:#fff; padding:15px; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,.1); width:220px; }
+    .item img, .product-card img { width:100%; height:160px; object-fit:cover; border-radius:10px; margin-bottom:10px;}
+    h2 { margin-top:40px; color:#c94f66; }
+    /* Cart */
+    #cart { position:fixed; right:20px; top:20px; background:#fff; border-radius:15px; padding:15px; width:320px; max-height:90%; overflow:auto; box-shadow:0 4px 10px rgba(0,0,0,.3); display:none; z-index:999; }
+    .cart-item { display:flex; justify-content:space-between; gap:8px; margin-bottom:6px; }
+    .checkout-btn { background:#f78da7; padding:10px; border-radius:10px; color:#fff; cursor:pointer; margin-top:10px; }
+    .products-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap:15px; margin-top:15px; }
+  </style>
+
+  <!-- Firebase + App -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="app.js"></script>
+</head>
+<body>
+
+  <a href="index.html" class="btn">← Back to Home</a>
+
+  <h1 style="font-size: xxx-large;">Our Full Menu</h1>
+  <p style="font-size: large;">Updated live by the Admin</p>
+
+  <!-- Shop (dynamic) -->
+  <h2 id="shop">Shop</h2>
+  <div id="shop-grid" class="products-grid"></div>
+
+  <!-- Your existing category jump buttons (optional) -->
+  <div style="margin-top:10px;">
+    <a href="#shop" class="btn">All</a>
+    <a href="menu.html?cat=Pastries#shop" class="btn">Pastries</a>
+    <a href="menu.html?cat=Cakes#shop" class="btn">Cakes</a>
+    <a href="menu.html?cat=Drinks#shop" class="btn">Drinks</a>
+    <a href="menu.html?cat=Coffee#shop" class="btn">Coffee</a>
+  </div>
+
+  <!-- Cart Button -->
+  <button class="btn" onclick="toggleCart()">🛒 View Cart (<span id="cart-count">0</span>)</button>
+
+  <!-- Cart Popup -->
+  <div id="cart">
+    <h3>Your Cart</h3>
+    <div id="cart-items"></div>
+    <hr>
+    <p><b>Total: Rs <span id="cart-total">0</span></b></p>
+
+    <!-- Customer Info -->
+    <div id="customer-info">
+      <input type="text" id="customer-name" placeholder="Your Name" required style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:6px;">
+      <input type="text" id="customer-phone" placeholder="Phone Number (starts with 5, 8 digits)" required style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:6px;">
+    </div>
+
+    <label>
+      Payment Method:
+      <select id="payment-method">
+        <option value="Pay at Pickup">Pay at Pickup</option>
+      </select>
+    </label>
+
+    <div class="checkout-btn" onclick="checkout()">Checkout</div>
+  </div>
+
+  <script>
+    // Re-use the cart functions you had (simplified):
+    const db = window.__DB__;
+    let cart = [];
+
+    window.addToCart = function(name, price){
+      cart.push({name, price});
+      document.getElementById('cart-count').textContent = cart.length;
+      renderCart();
+    };
+
+    function toggleCart(){
+      const cartDiv = document.getElementById('cart');
+      cartDiv.style.display = cartDiv.style.display==='block'?'none':'block';
+      renderCart();
+    }
+
+    function renderCart(){
+      const itemsDiv = document.getElementById('cart-items');
+      itemsDiv.innerHTML = '';
+      let total = 0;
+      cart.forEach((item,index)=>{
+        total += item.price;
+        itemsDiv.innerHTML += `<div class="cart-item"><span>${item.name}</span><span>Rs ${item.price}</span><button onclick="removeFromCart(${index})">❌</button></div>`;
+      });
+      document.getElementById('cart-total').textContent = total;
+    }
+
+    function removeFromCart(index){
+      cart.splice(index,1);
+      document.getElementById('cart-count').textContent = cart.length;
+      renderCart();
+    }
+
+    function checkout(){
+      if(cart.length === 0){ alert("Cart is empty!"); return; }
+      const name = document.getElementById('customer-name').value.trim();
+      const phone = document.getElementById('customer-phone').value.trim();
+      const phoneRegex = /^5\d{7}$/;
+      if(!name || !phoneRegex.test(phone)){ alert("Enter name and a valid phone (starts with 5, 8 digits)."); return; }
+
+      const order = {
+        customer: {name, phone},
+        items: cart,
+        paymentMethod: "Pay at Pickup",
+        time: new Date().toLocaleString()
+      };
+      db.ref("orders").push(order).then(()=>{
+        alert("Order placed successfully!");
+        cart = []; document.getElementById('cart-count').textContent = 0;
+        document.getElementById('customer-name').value = "";
+        document.getElementById('customer-phone').value = "";
+        renderCart(); toggleCart();
+      });
+    }
+
+    // Load all products into #shop-grid
+    window.loadShop && window.loadShop();
+  </script>
+</body>
+</html>
