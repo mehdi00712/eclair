@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin — Éclaïr</title>
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
 
-  <!-- Styles (minimal) -->
   <style>
     body { font-family:'Alice', serif; padding:20px; background:#fdf7f9; }
     .card { background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.08); padding:16px; max-width:1100px; margin:0 auto 16px; }
@@ -20,12 +20,13 @@
     .btn.danger { background:#e74c3c; }
     .pill { display:inline-block; padding:4px 10px; border-radius:999px; background:#ffe6ee; color:#c94f66; font-weight:600; font-size:12px; }
     .right { text-align:right; }
-    .table { width:100%; border-collapse:collapse; margin-top:12px; }
-    .table th,.table td { border-bottom:1px solid #eee; padding:10px; vertical-align:top; text-align:left; }
+    table { width:100%; border-collapse:collapse; }
+    th,td { border-bottom:1px solid #eee; padding:10px; vertical-align:top; text-align:left; }
     .preview { max-width:120px; border-radius:10px; display:block; }
     .hide { display:none; }
     .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
     .muted { color:#777; }
+    header.navbar { margin-bottom: 12px; }
   </style>
 
   <!-- Firebase (compat) -->
@@ -34,6 +35,15 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
+  <header class="navbar">
+    <div class="logo"><a href="index.html">Éclaïr</a></div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="menu.html">Menu</a></li>
+      <li><a class="active" href="admin.html">Admin</a></li>
+    </ul>
+  </header>
+
   <h1>Admin — Éclaïr</h1>
 
   <!-- AUTH -->
@@ -45,7 +55,7 @@
     </div>
     <div style="margin-top:10px; display:flex; gap:8px;">
       <button class="btn" id="btnLogin">Sign in</button>
-      <!-- Use ONCE to create the admin account, then remove/comment this button -->
+      <!-- Use once, then remove/comment -->
       <button class="btn muted" id="btnCreate">Create admin (once)</button>
     </div>
   </div>
@@ -68,7 +78,6 @@
     <div class="grid-2" style="margin-top:12px;">
       <div>
         <h3 id="formTitle">Add new product</h3>
-
         <div class="row-3">
           <input id="pName" placeholder="Name"/>
           <input id="pPrice" type="number" placeholder="Price (Rs)"/>
@@ -84,7 +93,7 @@
           <label class="pill"><input type="checkbox" id="pVisible" checked/> Visible</label>
         </div>
 
-        <!-- CLOUDINARY upload -->
+        <!-- Cloudinary upload (unsigned) -->
         <div class="row" style="margin-top:10px;">
           <input type="file" id="pImageFile" accept="image/*"/>
           <img id="pPreview" class="preview" alt="">
@@ -94,40 +103,28 @@
           <button class="btn" id="btnSave">Save</button>
           <button class="btn muted hide" id="btnCancelEdit">Cancel edit</button>
         </div>
-
-        <p class="muted" style="margin-top:8px;">
-          Images are uploaded to Cloudinary (unsigned). Or paste any image URL directly.
-        </p>
       </div>
 
       <div>
         <h3>Notes</h3>
-        <p class="muted">
-          • Use categories to organize the menu.<br/>
-          • Toggle “Visible” to hide/show without deleting.<br/>
-          • Changes appear instantly on the website (Home “Featured” & Menu “Shop”).
-        </p>
+        <p class="muted">Uploads use Cloudinary unsigned preset. Paste a URL or pick a file.</p>
       </div>
     </div>
 
-    <table class="table" style="margin-top:12px;">
-      <thead>
-        <tr><th>Item</th><th>Category</th><th>Price</th><th>Visible</th><th class="right">Actions</th></tr>
-      </thead>
+    <table style="margin-top:12px;">
+      <thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Visible</th><th class="right">Actions</th></tr></thead>
       <tbody id="tbodyProducts"></tbody>
     </table>
   </div>
 
 <script>
-/* =========================
-   1) Firebase (AUTH + DB)
-   ========================= */
+// Firebase config (from your snippet)
 const firebaseConfig = {
   apiKey: "AIzaSyDnYlw01KhjWRXLhatnr9fFcXA4Q_zOs10",
   authDomain: "eclair-501b7.firebaseapp.com",
   databaseURL: "https://eclair-501b7-default-rtdb.firebaseio.com",
   projectId: "eclair-501b7",
-  storageBucket: "eclair-501b7.appspot.com", // not used here
+  storageBucket: "eclair-501b7.appspot.com",
   messagingSenderId: "1042027942352",
   appId: "1:1042027942352:web:fa760d5609f5713c0d69d5",
   measurementId: "G-BC1Z5MKSTH"
@@ -136,32 +133,24 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.database();
 
-/* =========================
-   2) Cloudinary (images)
-   =========================
-   Using unsigned uploads via REST endpoint.
-   Do NOT expose your API secret here.
-*/
+// Cloudinary
 const CLOUDINARY_CLOUD = "dicwpp1ux";
 const CLOUDINARY_UNSIGNED_PRESET = "uufregjJNyXeLfjZ9bb0Aj8kzSh1";
 
 async function uploadToCloudinary(file) {
   if (!file) return "";
-
   const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/upload`;
   const form = new FormData();
   form.append("file", file);
   form.append("upload_preset", CLOUDINARY_UNSIGNED_PRESET);
-
+  // Optional: form.append("folder", "menu");
   const res = await fetch(url, { method: "POST", body: form });
   if (!res.ok) throw new Error("Cloudinary upload failed");
-  const data = await res.json();      // { secure_url, public_id, ... }
-  return data.secure_url || data.url; // Prefer https URL
+  const data = await res.json();
+  return data.secure_url || data.url;
 }
 
-/* =========================
-   3) DOM elements
-   ========================= */
+// DOM
 const authBox = document.getElementById('authBox');
 const dash = document.getElementById('dash');
 const email = document.getElementById('email');
@@ -185,9 +174,7 @@ const formTitle = document.getElementById('formTitle');
 
 let editingKey = null;
 
-/* =========================
-   4) Auth flow
-   ========================= */
+// Auth state
 auth.onAuthStateChanged(user => {
   if (user) {
     authBox.classList.add('hide');
@@ -200,24 +187,18 @@ auth.onAuthStateChanged(user => {
 });
 
 btnLogin.onclick = async () => {
-  try {
-    await auth.signInWithEmailAndPassword(email.value.trim(), password.value);
-  } catch (e) { alert(e.message); }
+  try { await auth.signInWithEmailAndPassword(email.value.trim(), password.value); }
+  catch (e) { alert(e.message); }
 };
 
-// Create admin ONCE, then remove this button from the page
 btnCreate.onclick = async () => {
-  try {
-    await auth.createUserWithEmailAndPassword(email.value.trim(), password.value);
-    alert('Admin created. You can now sign in.');
-  } catch (e) { alert(e.message); }
+  try { await auth.createUserWithEmailAndPassword(email.value.trim(), password.value); alert('Admin created. You can sign in now.'); }
+  catch (e) { alert(e.message); }
 };
 
 btnSignOut.onclick = () => auth.signOut();
 
-/* =========================
-   5) Image preview
-   ========================= */
+// Image preview
 pImageFile.onchange = () => {
   const file = pImageFile.files?.[0];
   if (!file) return;
@@ -226,9 +207,6 @@ pImageFile.onchange = () => {
   reader.readAsDataURL(file);
 };
 
-/* =========================
-   6) Save / Edit product
-   ========================= */
 function clearForm() {
   editingKey = null;
   formTitle.textContent = 'Add new product';
@@ -241,7 +219,6 @@ function clearForm() {
   pVisible.checked = true;
   btnCancelEdit.classList.add('hide');
 }
-
 btnCancelEdit.onclick = clearForm;
 
 btnSave.onclick = async () => {
@@ -252,30 +229,22 @@ btnSave.onclick = async () => {
     const visible = pVisible.checked;
     if (!name) return alert('Name is required');
 
-    // If a file is chosen, upload to Cloudinary, else use URL in field
     let image = pImageUrl.value.trim();
     const file = pImageFile.files?.[0];
     if (file) image = await uploadToCloudinary(file);
 
     const data = { name, price, category, image: image || '', visible, updatedAt: Date.now() };
-
     if (editingKey) {
       await db.ref(`products/${editingKey}`).update(data);
     } else {
       data.createdAt = Date.now();
       await db.ref('products').push(data);
     }
-
     clearForm();
-  } catch (e) {
-    alert(e.message);
-  }
+  } catch (e) { alert(e.message); }
 };
 
-/* =========================
-   7) List + actions
-   ========================= */
-filterCategory.onchange = loadProducts;
+filterCategory.onchange = () => loadProducts();
 
 function renderRow(key, p) {
   const tr = document.createElement('tr');
