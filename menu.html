@@ -1,13 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Éclaïr — Menu</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Menu — Éclaïr</title>
+
+  <!-- Fonts + CSS -->
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css"/>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
-<body id="top">
+<body>
   <!-- Navbar -->
   <nav>
     <div class="logo">
@@ -21,385 +27,520 @@
     </ul>
   </nav>
 
-  <main style="padding: 30px 20px;">
-    <h1 style="text-align:center;">Our Full Menu</h1>
-    <p style="text-align:center;">Updated live by the Admin</p>
+  <!-- Site-wide UI helpers (hamburger, smooth scroll, etc.) -->
+  <script src="script.js" defer></script>
 
-    <!-- Dynamic category chips -->
-    <div id="chips" class="chips"></div>
+  <!-- Banner image -->
+  <section class="menu-hero" style="padding-top:80px">
+    <!-- Replace with your banner image -->
+    <img src="10.jpg" alt="Éclaïr Menu Banner">
+  </section>
 
-    <!-- All categories rendered below -->
-    <div id="sections"></div>
+  <!-- Text UNDER the banner -->
+  <section class="menu-intro">
+    <h1>Our Menu</h1>
+    <p>Explore pastries, cakes, coffees, iced drinks, teas, and sparkling refreshments — crafted daily.</p>
+  </section>
 
-    <div style="text-align:center; margin-top:16px;">
-      <button class="btn" onclick="toggleCart()">🛒 View Cart (<span id="cart-count">0</span>)</button>
-    </div>
-  </main>
+  <!-- Category chips -->
+  <section class="chips" id="chips">
+    <a href="#" data-cat="all" class="chip active">All</a>
+    <a href="#" data-cat="Pastries" class="chip">Pastries</a>
+    <a href="#" data-cat="Cakes" class="chip">Cakes</a>
+    <a href="#" data-cat="Coffee" class="chip">Coffee</a>
+    <a href="#" data-cat="Iced Coffee" class="chip">Iced Coffee</a>
+    <a href="#" data-cat="Tea" class="chip">Tea</a>
+    <a href="#" data-cat="Iced Tea" class="chip">Iced Tea</a>
+    <a href="#" data-cat="Drinks" class="chip">Drinks</a>
+    <a href="#" data-cat="Sparkling" class="chip">Sparkling</a>
+  </section>
 
-  <!-- Cart -->
-  <div id="cart" aria-live="polite">
-    <h3>Your Cart</h3>
-    <div id="cart-items"></div>
-    <hr>
-    <p><b>Total: Rs <span id="cart-total">0</span></b></p>
+  <!-- Category sections (auto-filled) -->
+  <section class="category-block" data-block="Pastries">
+    <h2>Pastries</h2>
+    <div class="products-grid" id="grid-Pastries"></div>
+  </section>
 
-    <div id="customer-info">
-      <input type="text" id="customer-name" placeholder="Your Name" required>
-      <input type="text" id="customer-phone" placeholder="Phone (starts with 5, 8 digits)" required>
-    </div>
+  <section class="category-block" data-block="Cakes">
+    <h2>Cakes</h2>
+    <div class="products-grid" id="grid-Cakes"></div>
+  </section>
 
-    <label>
-      Payment Method:
-      <select id="payment-method">
-        <option value="Pay at Pickup">Pay at Pickup</option>
-      </select>
-    </label>
+  <section class="category-block" data-block="Coffee">
+    <h2>Coffee</h2>
+    <div class="products-grid" id="grid-Coffee"></div>
+  </section>
 
-    <div style="margin-top:10px;">
-      <button class="btn" onclick="checkout()">Checkout</button>
-      <button class="btn" onclick="toggleCart()">Close</button>
-    </div>
-  </div>
+  <section class="category-block" data-block="Iced Coffee">
+    <h2>Iced Coffee</h2>
+    <div class="products-grid" id="grid-Iced Coffee"></div>
+  </section>
 
-  <!-- Customize Modal -->
-  <div class="modal-backdrop" id="modalBackdrop">
-    <div class="modal" role="dialog" aria-modal="true">
+  <section class="category-block" data-block="Tea">
+    <h2>Tea</h2>
+    <div class="products-grid" id="grid-Tea"></div>
+  </section>
+
+  <section class="category-block" data-block="Iced Tea">
+    <h2>Iced Tea</h2>
+    <div class="products-grid" id="grid-Iced Tea"></div>
+  </section>
+
+  <section class="category-block" data-block="Drinks">
+    <h2>Drinks</h2>
+    <div class="products-grid" id="grid-Drinks"></div>
+  </section>
+
+  <section class="category-block" data-block="Sparkling">
+    <h2>Sparkling</h2>
+    <div class="products-grid" id="grid-Sparkling"></div>
+  </section>
+
+  <!-- Customize modal -->
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <header>
-        <div class="flex">
-          <strong id="modName">Item</strong>
-          <span class="muted" id="modCategory"></span>
-        </div>
-        <button class="btn small" type="button" onclick="closeModal()">Close</button>
+        <h3 id="modalTitle" style="margin:0;">Customize</h3>
+        <button class="btn icon" id="modalClose" aria-label="Close">✕</button>
       </header>
       <div class="content">
-        <div><img id="modImage" src="" alt=""></div>
         <div>
-          <div class="choice" id="sizeChoice" style="display:none;">
+          <img id="mImg" src="" alt="">
+        </div>
+        <div>
+          <h3 id="mName" style="margin:6px 0 10px;"></h3>
+
+          <div id="mSizes" class="choice" style="display:none;">
             <h4>Size</h4>
-            <select id="modSize"></select>
+            <div id="mSizeOptions"></div>
           </div>
 
-          <div class="choice" id="flavourChoice" style="display:none;">
+          <div id="mFlavours" class="choice" style="display:none;">
             <h4>Flavour</h4>
-            <select id="modFlavour"></select>
+            <div id="mFlavourOptions"></div>
           </div>
 
-          <div class="choice" id="toppingsChoice" style="display:none;">
+          <div id="mToppings" class="choice" style="display:none;">
             <h4>Toppings</h4>
-            <div class="toppings" id="modToppings"></div>
+            <div id="mToppingOptions" class="toppings"></div>
           </div>
 
           <div class="choice">
             <h4>Quantity</h4>
             <div class="qty">
-              <button class="btn icon" type="button" onclick="changeQty(-1)">−</button>
-              <strong id="modQty">1</strong>
-              <button class="btn icon" type="button" onclick="changeQty(1)">+</button>
+              <button class="btn icon" id="qtyMinus" aria-label="Decrease">−</button>
+              <span id="qtyVal">1</span>
+              <button class="btn icon" id="qtyPlus" aria-label="Increase">+</button>
             </div>
           </div>
 
-          <div class="right">
-            <div class="muted">Item total</div>
-            <h3>Rs <span id="modTotal">0</span></h3>
-          </div>
-
-          <div class="right" style="margin-top:8px;">
-            <button class="btn" type="button" onclick="confirmAdd()">Add to Cart</button>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px; gap:10px; flex-wrap:wrap;">
+            <strong>Total: Rs <span id="mTotal">0</span></strong>
+            <button class="btn" id="mAdd">Add to cart</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Firebase compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <!-- Cart bottom sheet -->
+  <div class="modal-backdrop" id="cartBackdrop" aria-hidden="true" style="display:none;"></div>
+  <div id="cart" role="dialog" aria-modal="true" aria-labelledby="cartTitle" style="display:none;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;">
+      <h3 id="cartTitle" style="margin:0;">Your Order</h3>
+      <button class="btn icon" id="cartClose" aria-label="Close cart">✕</button>
+    </div>
+    <div id="cartItems"></div>
+    <hr style="border:none; border-top:1px solid #f0d7df; margin:10px 0;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:8px 0;">
+      <strong>Subtotal</strong>
+      <strong>Rs <span id="cartSubtotal">0</span></strong>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+      <button class="btn muted" id="cartClear">Clear</button>
+      <a class="btn" id="cartCheckout" target="_blank" rel="noopener">Checkout via WhatsApp</a>
+    </div>
+  </div>
 
+  <!-- Floating cart button -->
+  <button id="cartFab" class="btn" aria-label="Open cart" style="
+    position:fixed; right:16px; bottom:16px; z-index:1000; border-radius:999px; padding:10px 14px;
+  ">
+    🧺 <span id="cartCount" style="font-weight:700;">0</span>
+  </button>
+
+  <!-- Firebase + Menu logic -->
   <script>
-    // Firebase init (RTDB)
-    (function initFirebase(){
-      const firebaseConfig = {
-        apiKey: "AIzaSyDnYlw01KhjWRXLhatnr9fFcXA4Q_zOs10",
-        authDomain: "eclair-501b7.firebaseapp.com",
-        databaseURL: "https://eclair-501b7-default-rtdb.firebaseio.com",
-        projectId: "eclair-501b7",
-        storageBucket: "eclair-501b7.appspot.com",
-        messagingSenderId: "1042027942352",
-        appId: "1:1042027942352:web:fa760d5609f5713c0d69d5",
-        measurementId: "G-BC1Z5MKSTH"
-      };
-      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-      window.__DB__ = firebase.database();
-    })();
+    // ----- Firebase init -----
+    const firebaseConfig = {
+      apiKey: "AIzaSyDnYlw01KhjWRXLhatnr9fFcXA4Q_zOs10",
+      authDomain: "eclair-501b7.firebaseapp.com",
+      databaseURL: "https://eclair-501b7-default-rtdb.firebaseio.com",
+      projectId: "eclair-501b7",
+      storageBucket: "eclair-501b7.appspot.com",
+      messagingSenderId: "1042027942352",
+      appId: "1:1042027942352:web:fa760d5609f5713c0d69d5",
+      measurementId: "G-BC1Z5MKSTH"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const DB = firebase.database();
 
-    // ---------- Utilities ----------
-    const PREFERRED_ORDER = ["Pastries","Cakes","Drinks","Sparkling","Iced Tea","Tea","Coffee","Iced Coffee"];
-    const slug = s => String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    // ----- State -----
+    const CART = [];
+    let currentProduct = null;
+    let currentQty = 1;
+    let currentSize = null;
+    let currentFlavour = null;
+    let currentToppings = new Set();
 
-    function sortCategories(keys){
-      return keys.slice().sort((a,b) => {
-        const ia = PREFERRED_ORDER.indexOf(a);
-        const ib = PREFERRED_ORDER.indexOf(b);
-        if (ia !== -1 || ib !== -1) {
-          return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-        }
-        return a.localeCompare(b);
-      });
+    // ----- Helpers -----
+    const grids = {
+      'Pastries': document.getElementById('grid-Pastries'),
+      'Cakes': document.getElementById('grid-Cakes'),
+      'Coffee': document.getElementById('grid-Coffee'),
+      'Iced Coffee': document.getElementById('grid-Iced Coffee'),
+      'Tea': document.getElementById('grid-Tea'),
+      'Iced Tea': document.getElementById('grid-Iced Tea'),
+      'Drinks': document.getElementById('grid-Drinks'),
+      'Sparkling': document.getElementById('grid-Sparkling'),
+    };
+
+    function money(n){ return (Math.round(Number(n||0) * 100) / 100).toFixed(0); }
+    function minSizePrice(p){
+      if (!p.sizes || !p.sizes.length) return null;
+      return Math.min(...p.sizes.map(s => Number(s.price || 0)));
     }
 
-    // ---------- Render ALL categories ----------
-    const chips = document.getElementById('chips');
-    const sections = document.getElementById('sections');
-    let PRODUCTS = {}; // id -> product
-    let GROUPS = {};   // category -> [products]
-
-    function renderChips(catKeys){
-      chips.innerHTML = [
-        `<a class="chip active" href="#top">All</a>`,
-        ...catKeys.map(k => `<a class="chip" href="#cat-${slug(k)}">${k}</a>`)
-      ].join('');
-    }
-
-    function cardHTML(p){
-      const fromPrice = (p.sizes && p.sizes.length)
-        ? Math.min(...p.sizes.map(s => Number(s.price||0)))
-        : Number(p.basePrice||0);
+    function productCardHTML(key, p){
+      const hasOpts = (p.sizes && p.sizes.length) || (p.flavours && p.flavours.length) || (p.toppings && p.toppings.length);
+      const from = minSizePrice(p);
+      const priceText = from != null ? `from Rs ${money(from)}` : `Rs ${money(p.basePrice)}`;
       return `
-        <div class="product-card">
-          <img src="${p.image||''}" alt="${p.name||''}" loading="lazy">
+        <div class="product-card" data-key="${key}">
+          <img src="${p.image||''}" alt="${p.name||''}">
           <h4>${p.name||''}</h4>
-          <p class="price">From Rs ${fromPrice}</p>
-          <button class="btn" onclick='openModal(${JSON.stringify(p._id)})'>Customize</button>
+          <p class="price">${priceText}</p>
+          <button class="btn small" data-action="customize">${hasOpts ? 'Customize' : 'Add'}</button>
         </div>
       `;
     }
 
-    function renderSections(){
-      const keys = Object.keys(GROUPS);
-      sections.innerHTML = keys.map(cat => `
-        <section class="category-block" id="cat-${slug(cat)}">
-          <h2>${cat}</h2>
-          <div class="products-grid">
-            ${GROUPS[cat].map(cardHTML).join('')}
-          </div>
-        </section>
-      `).join('');
+    function clearGrids(){
+      Object.values(grids).forEach(g => g && (g.innerHTML = ''));
     }
 
-    function loadAll(){
-      window.__DB__.ref('products').on('value', snap => {
-        const obj = snap.val() || {};
-        const all = Object.entries(obj)
-          .map(([id,p]) => ({...p, _id:id}))
-          .filter(p => p.visible);
+    function renderProducts(productsObj){
+      clearGrids();
+      const entries = Object.entries(productsObj)
+        .filter(([,p]) => p && p.visible)
+        .sort((a,b)=> (b[1].createdAt||0)-(a[1].createdAt||0));
 
-        // Group by category
-        const groups = {};
-        for (const p of all) {
-          const cat = p.category || 'Other';
-          (groups[cat] ||= []).push(p);
-        }
-        // Sort each group newest first
-        for (const k in groups) groups[k].sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
-        // Sort categories
-        const catKeys = sortCategories(Object.keys(groups));
-
-        PRODUCTS = Object.fromEntries(all.map(p => [p._id, p]));
-        GROUPS = Object.fromEntries(catKeys.map(k => [k, groups[k]]));
-
-        renderChips(catKeys);
-        renderSections();
+      entries.forEach(([key, p]) => {
+        const g = grids[p.category];
+        if (!g) return;
+        g.insertAdjacentHTML('beforeend', productCardHTML(key, p));
       });
     }
 
-    // ---------- Modal / Customize ----------
-    const backdrop = document.getElementById('modalBackdrop');
-    const modName = document.getElementById('modName');
-    const modCategory = document.getElementById('modCategory');
-    const modImage = document.getElementById('modImage');
-    const modSize = document.getElementById('modSize');
-    const sizeChoice = document.getElementById('sizeChoice');
-    const modFlavour = document.getElementById('modFlavour');
-    const flavourChoice = document.getElementById('flavourChoice');
-    const modToppings = document.getElementById('modToppings');
-    const toppingsChoice = document.getElementById('toppingsChoice');
-    const modQty = document.getElementById('modQty');
-    const modTotal = document.getElementById('modTotal');
-
-    let CURRENT = null;
-    function openModal(id){
-      const p = PRODUCTS[id];
-      if (!p) return;
-      CURRENT = {
-        id, name:p.name, category:p.category, image:p.image,
-        basePrice: Number(p.basePrice||0),
-        sizes: p.sizes||[],
-        flavours: p.flavours||[],
-        toppings: p.toppings||[],
-        qty: 1,
-        sizeIndex: (p.sizes && p.sizes.length) ? 0 : -1,
-        flavourIndex: (p.flavours && p.flavours.length) ? 0 : -1,
-        toppingSet: new Set()
-      };
-
-      modName.textContent = p.name||'';
-      modCategory.textContent = p.category||'';
-      modImage.src = p.image||'';
-
-      // Sizes
-      if (CURRENT.sizes.length){
-        sizeChoice.style.display = '';
-        modSize.innerHTML = CURRENT.sizes.map((s,i)=>`<option value="${i}">${s.label} — Rs ${Number(s.price||0)}</option>`).join('');
-        modSize.value = String(CURRENT.sizeIndex);
-      } else { sizeChoice.style.display = 'none'; }
-
-      // Flavours
-      if (CURRENT.flavours.length){
-        flavourChoice.style.display = '';
-        modFlavour.innerHTML = CURRENT.flavours.map((f,i)=>`<option value="${i}">${f.label}</option>`).join('');
-        modFlavour.value = String(CURRENT.flavourIndex);
-      } else { flavourChoice.style.display = 'none'; }
-
-      // Toppings
-      if (CURRENT.toppings.length){
-        toppingsChoice.style.display = '';
-        modToppings.innerHTML = CURRENT.toppings.map((t, i) => `
-          <label class="flex">
-            <input type="checkbox" data-top="${i}">
-            <span>${t.label} <span class="muted">(Rs ${Number(t.price||0)})</span></span>
-          </label>
-        `).join('');
-      } else { toppingsChoice.style.display = 'none'; }
-
-      modQty.textContent = '1';
-      recalc();
-      document.body.style.overflow = 'hidden';
-      backdrop.style.display = 'flex';
-    }
-    function closeModal(){ backdrop.style.display = 'none'; CURRENT = null; document.body.style.overflow = ''; }
-
-    modSize.addEventListener('change', () => { CURRENT.sizeIndex = Number(modSize.value||0); recalc(); });
-    modFlavour.addEventListener('change', () => { CURRENT.flavourIndex = Number(modFlavour.value||0); });
-    modToppings.addEventListener('change', (e) => {
-      if (!e.target || !e.target.dataset.top) return;
-      const idx = Number(e.target.dataset.top);
-      if (e.target.checked) CURRENT.toppingSet.add(idx);
-      else CURRENT.toppingSet.delete(idx);
-      recalc();
+    // ----- Load products -----
+    DB.ref('products').on('value', (snap) => {
+      const obj = snap.val() || {};
+      renderProducts(obj);
     });
 
-    function changeQty(delta){
-      if (!CURRENT) return;
-      CURRENT.qty = Math.max(1, CURRENT.qty + delta);
-      modQty.textContent = String(CURRENT.qty);
-      recalc();
-    }
-    function recalc(){
-      if (!CURRENT) return;
-      let unit = CURRENT.sizes.length
-        ? Number(CURRENT.sizes[CURRENT.sizeIndex]?.price || 0)
-        : Number(CURRENT.basePrice || 0);
-      let tops = 0;
-      CURRENT.toppingSet.forEach(i => tops += Number(CURRENT.toppings[i]?.price || 0));
-      const total = (unit + tops) * CURRENT.qty;
-      modTotal.textContent = total;
+    // ----- Category chip filtering (show/hide blocks) -----
+    const chips = document.getElementById('chips');
+    chips.addEventListener('click', (e) => {
+      const a = e.target.closest('a.chip');
+      if (!a) return;
+      e.preventDefault();
+      chips.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      a.classList.add('active');
+      const cat = a.dataset.cat;
+
+      const blocks = document.querySelectorAll('.category-block');
+      blocks.forEach(b => {
+        const match = (cat === 'all') || (b.dataset.block === cat);
+        b.style.display = match ? '' : 'none';
+      });
+
+      // scroll to first visible block
+      const first = Array.from(document.querySelectorAll('.category-block'))
+        .find(b => b.style.display !== 'none');
+      if (first) {
+        const navH = document.querySelector('nav')?.getBoundingClientRect().height || 0;
+        const top = first.getBoundingClientRect().top + window.pageYOffset - navH - 6;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    });
+
+    // ----- Customize modal -----
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalClose = document.getElementById('modalClose');
+    const mImg = document.getElementById('mImg');
+    const mName = document.getElementById('mName');
+    const mTotal = document.getElementById('mTotal');
+    const mAdd = document.getElementById('mAdd');
+    const qtyMinus = document.getElementById('qtyMinus');
+    const qtyPlus = document.getElementById('qtyPlus');
+    const qtyVal = document.getElementById('qtyVal');
+
+    const mSizes = document.getElementById('mSizes');
+    const mSizeOptions = document.getElementById('mSizeOptions');
+    const mFlavours = document.getElementById('mFlavours');
+    const mFlavourOptions = document.getElementById('mFlavourOptions');
+    const mToppings = document.getElementById('mToppings');
+    const mToppingOptions = document.getElementById('mToppingOptions');
+
+    function openModal(){ modalBackdrop.style.display = 'flex'; document.body.classList.add('nav-open'); }
+    function closeModal(){ modalBackdrop.style.display = 'none'; document.body.classList.remove('nav-open'); }
+    modalClose.addEventListener('click', closeModal);
+    modalBackdrop.addEventListener('click', (e)=>{ if (e.target === modalBackdrop) closeModal(); });
+
+    function computeTotal(p){
+      let price = Number(p.basePrice || 0);
+      if (p.sizes && p.sizes.length && currentSize) {
+        const s = p.sizes.find(x => x.label === currentSize);
+        if (s) price = Number(s.price || 0);
+      }
+      // toppings
+      if (p.toppings && p.toppings.length && currentToppings.size) {
+        for (const t of p.toppings) {
+          if (currentToppings.has(t.label)) price += Number(t.price || 0);
+        }
+      }
+      return price * currentQty;
     }
 
-    // ---------- Cart ----------
-    let CART = [];
-    function addToCartLine(line){ CART.push(line); renderCart(); }
-    function renderCart(){
-      const itemsDiv = document.getElementById('cart-items');
-      const totalEl = document.getElementById('cart-total');
-      const badge = document.getElementById('cart-count');
-      let total = 0;
-      itemsDiv.innerHTML = CART.map((it, idx) => {
-        const tops = it.toppings?.length ? ` + ${it.toppings.map(t=>t.label).join(', ')}` : '';
-        const opts = `${it.size ? ` (${it.size})` : ''}${it.flavour ? ` - ${it.flavour}` : ''}${tops}`;
-        const line = it.unitPrice * it.qty;
-        total += line;
-        return `
-          <div class="cart-item">
-            <div style="text-align:left;">
-              <div><b>${it.name}</b>${opts}</div>
-              <div class="muted">Rs ${it.unitPrice} × ${it.qty} = <b>Rs ${line}</b></div>
-            </div>
-            <div class="qty">
-              <button class="btn icon" onclick="decQty(${idx})">−</button>
-              <span>${it.qty}</span>
-              <button class="btn icon" onclick="incQty(${idx})">+</button>
-              <button class="btn icon" onclick="removeLine(${idx})">✕</button>
+    function renderModal(p){
+      mImg.src = p.image || '';
+      mName.textContent = p.name || '';
+
+      // Sizes
+      if (p.sizes && p.sizes.length) {
+        mSizes.style.display = '';
+        mSizeOptions.innerHTML = p.sizes.map((s,i)=> `
+          <label><input type="radio" name="size" value="${s.label}" ${i===0?'checked':''}> ${s.label} — Rs ${money(s.price)}</label>
+        `).join('');
+        currentSize = p.sizes[0].label;
+      } else { mSizes.style.display = 'none'; mSizeOptions.innerHTML = ''; currentSize = null; }
+
+      // Flavours
+      if (p.flavours && p.flavours.length) {
+        mFlavours.style.display = '';
+        mFlavourOptions.innerHTML = p.flavours.map((f,i)=> `
+          <label><input type="radio" name="flavour" value="${f.label}" ${i===0?'checked':''}> ${f.label}</label>
+        `).join('');
+        currentFlavour = p.flavours[0].label;
+      } else { mFlavours.style.display = 'none'; mFlavourOptions.innerHTML = ''; currentFlavour = null; }
+
+      // Toppings
+      if (p.toppings && p.toppings.length) {
+        mToppings.style.display = '';
+        mToppingOptions.innerHTML = p.toppings.map(t => `
+          <label><input type="checkbox" value="${t.label}" data-price="${t.price}"> ${t.label} (+Rs ${money(t.price)})</label>
+        `).join('');
+        currentToppings = new Set();
+      } else { mToppings.style.display = 'none'; mToppingOptions.innerHTML = ''; currentToppings = new Set(); }
+
+      currentQty = 1; qtyVal.textContent = '1';
+      mTotal.textContent = money(computeTotal(p));
+    }
+
+    // Listeners inside modal
+    mSizeOptions.addEventListener('change', (e) => {
+      if (e.target.name === 'size') { currentSize = e.target.value; if (currentProduct) mTotal.textContent = money(computeTotal(currentProduct)); }
+    });
+    mFlavourOptions.addEventListener('change', (e) => {
+      if (e.target.name === 'flavour') { currentFlavour = e.target.value; }
+    });
+    mToppingOptions.addEventListener('change', (e) => {
+      const cb = e.target;
+      if (cb && cb.type === 'checkbox') {
+        if (cb.checked) currentToppings.add(cb.value); else currentToppings.delete(cb.value);
+        if (currentProduct) mTotal.textContent = money(computeTotal(currentProduct));
+      }
+    });
+    qtyMinus.addEventListener('click', ()=> { currentQty = Math.max(1, currentQty-1); qtyVal.textContent = String(currentQty); if (currentProduct) mTotal.textContent = money(computeTotal(currentProduct)); });
+    qtyPlus.addEventListener('click', ()=> { currentQty += 1; qtyVal.textContent = String(currentQty); if (currentProduct) mTotal.textContent = money(computeTotal(currentProduct)); });
+
+    // Open modal on product card
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action="customize"]');
+      if (!btn) return;
+      const card = btn.closest('.product-card');
+      const key = card?.dataset.key;
+      if (!key) return;
+
+      // fetch single product once from current snapshot cache
+      DB.ref('products/' + key).once('value').then(s=>{
+        const p = s.val();
+        if (!p) return;
+        currentProduct = { key, ...p };
+        renderModal(currentProduct);
+        openModal();
+      });
+    });
+
+    // Add to cart
+    mAdd.addEventListener('click', () => {
+      if (!currentProduct) return;
+      CART.push({
+        key: currentProduct.key,
+        name: currentProduct.name,
+        image: currentProduct.image || '',
+        size: currentSize,
+        flavour: currentFlavour,
+        toppings: Array.from(currentToppings),
+        qty: currentQty,
+        unitPrice: computeTotal(currentProduct) / currentQty
+      });
+      updateCartUI();
+      closeModal();
+      openCart();
+    });
+
+    // ----- Cart UI -----
+    const cart = document.getElementById('cart');
+    const cartBackdrop = document.getElementById('cartBackdrop');
+    const cartItems = document.getElementById('cartItems');
+    const cartSubtotal = document.getElementById('cartSubtotal');
+    const cartCheckout = document.getElementById('cartCheckout');
+    const cartClear = document.getElementById('cartClear');
+    const cartClose = document.getElementById('cartClose');
+    const cartFab = document.getElementById('cartFab');
+    const cartCount = document.getElementById('cartCount');
+
+    function openCart() {
+      cart.style.display = 'block';
+      cartBackdrop.style.display = 'flex';
+      document.body.classList.add('nav-open'); // lock scroll
+    }
+    function closeCart() {
+      cart.style.display = 'none';
+      cartBackdrop.style.display = 'none';
+      document.body.classList.remove('nav-open');
+      // reset transform after drag
+      cart.style.transform = '';
+    }
+    cartFab.addEventListener('click', openCart);
+    cartBackdrop.addEventListener('click', closeCart);
+    cartClose.addEventListener('click', closeCart);
+
+    function updateCartUI(){
+      cartItems.innerHTML = '';
+      let subtotal = 0;
+
+      CART.forEach((item, idx) => {
+        const line = item.unitPrice * item.qty;
+        subtotal += line;
+
+        const opts = [
+          item.size ? `Size: ${item.size}` : null,
+          item.flavour ? `Flavour: ${item.flavour}` : null,
+          (item.toppings && item.toppings.length) ? `Toppings: ${item.toppings.join(', ')}` : null
+        ].filter(Boolean).join(' • ');
+
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        div.innerHTML = `
+          <div style="display:flex; gap:8px; align-items:center;">
+            <img src="${item.image}" alt="" style="width:50px;height:40px;object-fit:cover;border-radius:6px;">
+            <div>
+              <div style="font-weight:700">${item.name}</div>
+              <div class="muted" style="font-size:.9rem;">${opts || ''}</div>
+              <div class="muted">Rs ${money(item.unitPrice)} each</div>
             </div>
           </div>
+          <div class="qty">
+            <button class="btn icon" data-q="-1" data-i="${idx}">−</button>
+            <span>${item.qty}</span>
+            <button class="btn icon" data-q="+1" data-i="${idx}">+</button>
+            <button class="btn icon" data-del="${idx}" title="Remove">✕</button>
+          </div>
         `;
-      }).join('');
-      totalEl.textContent = total;
-      badge.textContent = CART.reduce((a,b)=>a+b.qty,0);
-    }
-    function incQty(i){ CART[i].qty++; renderCart(); }
-    function decQty(i){ CART[i].qty = Math.max(1, CART[i].qty-1); renderCart(); }
-    function removeLine(i){ CART.splice(i,1); renderCart(); }
-    function toggleCart(){
-      const cartDiv = document.getElementById('cart');
-      cartDiv.style.display = cartDiv.style.display==='block' ? 'none' : 'block';
-      renderCart();
-    }
+        cartItems.appendChild(div);
+      });
 
-    function confirmAdd(){
-      if (!CURRENT) return;
-      const sizeObj = CURRENT.sizes.length ? CURRENT.sizes[CURRENT.sizeIndex] : null;
-      const unit = sizeObj ? Number(sizeObj.price||0) : Number(CURRENT.basePrice||0);
-      let tops = [];
-      CURRENT.toppingSet.forEach(i => { const t = CURRENT.toppings[i]; if (t) tops.push({label:t.label, price:Number(t.price||0)}) });
-      const unitPlusTops = unit + tops.reduce((s,t)=>s+(t.price||0),0);
+      cartSubtotal.textContent = money(subtotal);
+      cartCount.textContent = String(CART.reduce((a,c)=>a+c.qty,0));
 
-      const line = {
-        productId: CURRENT.id,
-        name: CURRENT.name,
-        size: sizeObj ? sizeObj.label : null,
-        flavour: CURRENT.flavours.length && CURRENT.flavourIndex>=0 ? CURRENT.flavours[CURRENT.flavourIndex].label : null,
-        toppings: tops,
-        unitPrice: unitPlusTops,
-        qty: CURRENT.qty
-      };
-      addToCartLine(line);
-      closeModal();
-      toggleCart();
+      // WhatsApp checkout message
+      const lines = CART.map(i => {
+        const bits = [];
+        if (i.size) bits.push(i.size);
+        if (i.flavour) bits.push(i.flavour);
+        if (i.toppings && i.toppings.length) bits.push('+' + i.toppings.join(', '));
+        return `• ${i.name}${bits.length? ' ('+bits.join(' | ')+')' : ''} × ${i.qty} = Rs ${money(i.unitPrice*i.qty)}`;
+      });
+      lines.push(`Subtotal: Rs ${money(subtotal)}`);
+      const msg = encodeURIComponent(`Éclaïr Order:\n${lines.join('\n')}\n\nName:\nPickup/Delivery time:`);
+      cartCheckout.href = `https://wa.me/23057053770?text=${msg}`;
     }
 
-    // expose
-    window.openModal = openModal;
-    window.closeModal = closeModal;
-    window.changeQty = changeQty;
-    window.confirmAdd = confirmAdd;
-    window.toggleCart = toggleCart;
-    window.checkout = checkout;
-    window.incQty = incQty;
-    window.decQty = decQty;
-    window.removeLine = removeLine;
+    // Cart qty & delete
+    cartItems.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const i = Number(btn.dataset.i);
+      if (btn.hasAttribute('data-q')) {
+        const delta = btn.dataset.q === '+1' ? 1 : -1;
+        CART[i].qty = Math.max(1, CART[i].qty + delta);
+      }
+      if (btn.hasAttribute('data-del')) {
+        CART.splice(Number(btn.dataset.del), 1);
+      }
+      updateCartUI();
+    });
 
-    async function checkout(){
-      if (!CART.length) return alert('Cart is empty!');
-      const name = (document.getElementById('customer-name')||{}).value?.trim();
-      const phone = (document.getElementById('customer-phone')||{}).value?.trim();
-      const method = (document.getElementById('payment-method')||{}).value || 'Pay at Pickup';
-      const phoneRegex = /^5\d{7}$/; // Mauritius mobile
-      if (!name || !phoneRegex.test(phone||'')) return alert('Enter a name and a valid phone (starts with 5, 8 digits).');
-      const total = CART.reduce((s,it)=> s + it.unitPrice*it.qty, 0);
+    cartClear.addEventListener('click', () => {
+      if (CART.length && confirm('Clear cart?')) {
+        CART.length = 0;
+        updateCartUI();
+      }
+    });
 
-      try {
-        await window.__DB__.ref('orders').push({ customer:{name,phone}, items:CART, paymentMethod:method, total, createdAt: Date.now() });
-        alert('Order placed successfully!');
-        CART = []; renderCart(); toggleCart();
-        document.getElementById('customer-name').value = '';
-        document.getElementById('customer-phone').value = '';
-      } catch(e){ alert(e.message); }
-    }
+    // ----- Drag-to-close for mobile bottom sheet -----
+    (function enableCartDrag() {
+      let startY = 0, currentY = 0, dragging = false;
 
-    document.addEventListener('DOMContentLoaded', loadAll);
+      function onStart(e){
+        // only activate on mobile sizes and when cart visible
+        if (window.innerWidth > 768 || cart.style.display !== 'block') return;
+        dragging = true;
+        startY = (e.touches ? e.touches[0].clientY : e.clientY);
+        cart.style.transition = 'none';
+      }
+      function onMove(e){
+        if (!dragging) return;
+        currentY = (e.touches ? e.touches[0].clientY : e.clientY);
+        const delta = Math.max(0, currentY - startY); // only drag down
+        cart.style.transform = `translateY(${delta}px)`;
+      }
+      function onEnd(){
+        if (!dragging) return;
+        dragging = false;
+        const delta = Math.max(0, currentY - startY);
+        cart.style.transition = 'transform .2s ease';
+        if (delta > 80) { // threshold
+          closeCart();
+        } else {
+          cart.style.transform = 'translateY(0)'; // snap back
+          setTimeout(()=> cart.style.transition = '', 220);
+        }
+      }
+
+      cart.addEventListener('touchstart', onStart, {passive:true});
+      cart.addEventListener('touchmove', onMove, {passive:true});
+      cart.addEventListener('touchend', onEnd);
+      // optional mouse support
+      cart.addEventListener('mousedown', onStart);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+    })();
+
+    // Kick off
+    updateCartUI();
   </script>
-
-  <!-- Hamburger + UI helpers -->
-  <script src="script.js"></script>
 </body>
 </html>
