@@ -7,48 +7,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css"/>
   <script src="script.js" defer></script>
-
-  <style>
-    /* Minimal extras; your style.css keeps the look */
-    .chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0 20px; }
-    .chip { display:inline-block; padding:8px 14px; border-radius:999px; background:#fbe1e9; color:#c94f66; font-weight:700; cursor:pointer; text-decoration:none; }
-    .chip.active { background:#f78da7; color:#fff; }
-    .category-block { margin: 28px auto 40px; max-width: 1100px; }
-    .category-block h2 { text-align:center; color:#c94f66; margin-bottom:12px; }
-    .category-block .products-grid { margin-top: 10px; }
-    /* Cart & modal (lightweight) */
-    #cart { position:fixed; right:20px; top:20px; background:#fff; border-radius:15px; padding:15px; width:340px; max-height:90vh; overflow:auto; box-shadow:0 4px 18px rgba(0,0,0,.15); display:none; z-index:999; }
-    .cart-item { display:flex; justify-content:space-between; gap:8px; margin-bottom:8px; align-items:center; }
-    .btn { display:inline-block; padding:10px 18px; background:#f78da7; color:#fff; border-radius:25px; text-decoration:none; cursor:pointer; font-weight:600; }
-    .btn.small { padding:6px 12px; border-radius:14px; }
-    .btn.icon { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0; }
-    .qty { display:inline-flex; align-items:center; gap:8px; }
-    .muted { color:#777; }
-    .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:998; }
-    .modal { background:#fff; width:min(720px, 92vw); border-radius:16px; box-shadow:0 10px 28px rgba(0,0,0,.2); overflow:hidden; }
-    .modal header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#fff3f6; }
-    .modal .content { padding:16px; display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
-    .modal img { width:100%; height:220px; object-fit:cover; border-radius:12px; }
-    .choice { margin-bottom:10px; }
-    .choice h4 { margin:8px 0; }
-    .toppings { display:grid; gap:6px; max-height:160px; overflow:auto; padding-right:6px; }
-    .flex { display:flex; align-items:center; gap:10px; }
-    .right { text-align:right; }
-    @media (max-width:720px){
-      .modal .content { grid-template-columns: 1fr; }
-      .modal img { height:200px; }
-    }
-  </style>
 </head>
-<body>
-  <header class="navbar">
-    <div class="logo"><a href="index.html">Éclaïr</a></div>
+<body id="top">
+  <!-- Navbar -->
+  <nav>
+    <div class="logo"><a href="index.html" aria-label="Éclaïr Home"><img src="logo.jpg" alt="Éclaïr logo"></a></div>
+    <button class="menu-toggle" aria-label="Toggle Menu">&#9776;</button>
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
       <li><a class="active" href="menu.html">Menu</a></li>
       <li><a href="admin.html">Admin</a></li>
     </ul>
-  </header>
+  </nav>
 
   <main style="padding: 30px 20px;">
     <h1 style="text-align:center;">Our Full Menu</h1>
@@ -66,15 +36,15 @@
   </main>
 
   <!-- Cart -->
-  <div id="cart">
+  <div id="cart" aria-live="polite">
     <h3>Your Cart</h3>
     <div id="cart-items"></div>
     <hr>
     <p><b>Total: Rs <span id="cart-total">0</span></b></p>
 
     <div id="customer-info">
-      <input type="text" id="customer-name" placeholder="Your Name" required style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:6px;">
-      <input type="text" id="customer-phone" placeholder="Phone (starts with 5, 8 digits)" required style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:6px;">
+      <input type="text" id="customer-name" placeholder="Your Name" required>
+      <input type="text" id="customer-phone" placeholder="Phone (starts with 5, 8 digits)" required>
     </div>
 
     <label>
@@ -140,7 +110,7 @@
     </div>
   </div>
 
-  <!-- Firebase compat (order matters) -->
+  <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
@@ -162,9 +132,7 @@
     })();
 
     // ---------- Utilities ----------
-    const PREFERRED_ORDER = [
-      "Pastries","Cakes","Drinks","Sparkling","Iced Tea","Tea","Coffee","Iced Coffee"
-    ];
+    const PREFERRED_ORDER = ["Pastries","Cakes","Drinks","Sparkling","Iced Tea","Tea","Coffee","Iced Coffee"];
     const slug = s => String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
 
     function sortCategories(keys){
@@ -178,16 +146,16 @@
       });
     }
 
-    // ---------- Render ALL categories as blocks ----------
+    // ---------- Render ALL categories ----------
     const chips = document.getElementById('chips');
     const sections = document.getElementById('sections');
     let PRODUCTS = {}; // id -> product
     let GROUPS = {};   // category -> [products]
 
-    function renderChips(catKeys, activeCat){
+    function renderChips(catKeys){
       chips.innerHTML = [
-        `<a class="chip ${!activeCat ? 'active':''}" href="menu.html#top">All</a>`,
-        ...catKeys.map(k => `<a class="chip ${activeCat===k?'active':''}" href="#cat-${slug(k)}">${k}</a>`)
+        `<a class="chip active" href="#top">All</a>`,
+        ...catKeys.map(k => `<a class="chip" href="#cat-${slug(k)}">${k}</a>`)
       ].join('');
     }
 
@@ -197,7 +165,7 @@
         : Number(p.basePrice||0);
       return `
         <div class="product-card">
-          <img src="${p.image||''}" alt="${p.name||''}">
+          <img src="${p.image||''}" alt="${p.name||''}" loading="lazy">
           <h4>${p.name||''}</h4>
           <p class="price">From Rs ${fromPrice}</p>
           <button class="btn" onclick='openModal(${JSON.stringify(p._id)})'>Customize</button>
@@ -205,10 +173,9 @@
       `;
     }
 
-    function renderSections(filterCat=null){
+    function renderSections(){
       const keys = Object.keys(GROUPS);
-      const showKeys = filterCat ? keys.filter(k => k===filterCat) : keys;
-      sections.innerHTML = showKeys.map(cat => `
+      sections.innerHTML = keys.map(cat => `
         <section class="category-block" id="cat-${slug(cat)}">
           <h2>${cat}</h2>
           <div class="products-grid">
@@ -219,7 +186,6 @@
     }
 
     function loadAll(){
-      const urlCat = new URLSearchParams(location.search).get('cat');
       window.__DB__.ref('products').on('value', snap => {
         const obj = snap.val() || {};
         const all = Object.entries(obj)
@@ -233,22 +199,19 @@
           (groups[cat] ||= []).push(p);
         }
         // Sort each group newest first
-        for (const k in groups) {
-          groups[k].sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
-        }
-        // Sort categories (preferred order first, then alphabetic)
+        for (const k in groups) groups[k].sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
+        // Sort categories
         const catKeys = sortCategories(Object.keys(groups));
 
-        // Keep globals
         PRODUCTS = Object.fromEntries(all.map(p => [p._id, p]));
         GROUPS = Object.fromEntries(catKeys.map(k => [k, groups[k]]));
 
-        renderChips(catKeys, urlCat);
-        renderSections(urlCat || null);
+        renderChips(catKeys);
+        renderSections();
       });
     }
 
-    // ---------- Modal / Customize (sizes, flavours, toppings, qty) ----------
+    // ---------- Modal / Customize ----------
     const backdrop = document.getElementById('modalBackdrop');
     const modName = document.getElementById('modName');
     const modCategory = document.getElementById('modCategory');
@@ -309,9 +272,10 @@
 
       modQty.textContent = '1';
       recalc();
+      document.body.style.overflow = 'hidden';
       backdrop.style.display = 'flex';
     }
-    function closeModal(){ backdrop.style.display = 'none'; CURRENT = null; }
+    function closeModal(){ backdrop.style.display = 'none'; CURRENT = null; document.body.style.overflow = ''; }
 
     modSize.addEventListener('change', () => { CURRENT.sizeIndex = Number(modSize.value||0); recalc(); });
     modFlavour.addEventListener('change', () => { CURRENT.flavourIndex = Number(modFlavour.value||0); });
@@ -402,34 +366,7 @@
       toggleCart();
     }
 
-    // ---------- Checkout (push order to RTDB /orders) ----------
-    async function checkout(){
-      if (!CART.length) return alert('Cart is empty!');
-      const name = (document.getElementById('customer-name')||{}).value?.trim();
-      const phone = (document.getElementById('customer-phone')||{}).value?.trim();
-      const method = (document.getElementById('payment-method')||{}).value || 'Pay at Pickup';
-      const phoneRegex = /^5\d{7}$/; // Mauritius mobile
-      if (!name || !phoneRegex.test(phone||'')) return alert('Enter a name and a valid phone (starts with 5, 8 digits).');
-      const total = CART.reduce((s,it)=> s + it.unitPrice*it.qty, 0);
-
-      const order = {
-        customer: { name, phone },
-        items: CART,
-        paymentMethod: method,
-        total,
-        createdAt: Date.now()
-      };
-
-      try {
-        await window.__DB__.ref('orders').push(order);
-        alert('Order placed successfully!');
-        CART = []; renderCart(); toggleCart();
-        document.getElementById('customer-name').value = '';
-        document.getElementById('customer-phone').value = '';
-      } catch(e){ alert(e.message); }
-    }
-
-    // expose for buttons
+    // expose
     window.openModal = openModal;
     window.closeModal = closeModal;
     window.changeQty = changeQty;
@@ -439,6 +376,24 @@
     window.incQty = incQty;
     window.decQty = decQty;
     window.removeLine = removeLine;
+
+    async function checkout(){
+      if (!CART.length) return alert('Cart is empty!');
+      const name = (document.getElementById('customer-name')||{}).value?.trim();
+      const phone = (document.getElementById('customer-phone')||{}).value?.trim();
+      const method = (document.getElementById('payment-method')||{}).value || 'Pay at Pickup';
+      const phoneRegex = /^5\d{7}$/; // Mauritius mobile
+      if (!name || !phoneRegex.test(phone||'')) return alert('Enter a name and a valid phone (starts with 5, 8 digits).');
+      const total = CART.reduce((s,it)=> s + it.unitPrice*it.qty, 0);
+
+      try {
+        await window.__DB__.ref('orders').push({ customer:{name,phone}, items:CART, paymentMethod:method, total, createdAt: Date.now() });
+        alert('Order placed successfully!');
+        CART = []; renderCart(); toggleCart();
+        document.getElementById('customer-name').value = '';
+        document.getElementById('customer-phone').value = '';
+      } catch(e){ alert(e.message); }
+    }
 
     document.addEventListener('DOMContentLoaded', loadAll);
   </script>
