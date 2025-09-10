@@ -5,320 +5,332 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin — Éclaïr</title>
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css"/>
+
+  <!-- Styles (minimal) -->
+  <style>
+    body { font-family:'Alice', serif; padding:20px; background:#fdf7f9; }
+    .card { background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.08); padding:16px; max-width:1100px; margin:0 auto 16px; }
+    .row { display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; }
+    .row-3 { display:grid; grid-template-columns: 2fr 1fr 1fr; gap:12px; }
+    input, select, button { font-family:inherit; }
+    input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:10px; }
+    button { padding:10px 16px; border:none; border-radius:12px; cursor:pointer; }
+    .btn { background:#f78da7; color:#fff; }
+    .btn.muted { background:#eee; color:#333; }
+    .btn.danger { background:#e74c3c; }
+    .pill { display:inline-block; padding:4px 10px; border-radius:999px; background:#ffe6ee; color:#c94f66; font-weight:600; font-size:12px; }
+    .right { text-align:right; }
+    .table { width:100%; border-collapse:collapse; margin-top:12px; }
+    .table th,.table td { border-bottom:1px solid #eee; padding:10px; vertical-align:top; text-align:left; }
+    .preview { max-width:120px; border-radius:10px; display:block; }
+    .hide { display:none; }
+    .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    .muted { color:#777; }
+  </style>
 
   <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
-
-  <style>
-    body { font-family: 'Alice', serif; padding: 20px; }
-    .admin-card { background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,0.08); padding:16px; max-width:1100px; margin:0 auto 20px; }
-    .row { display:grid; grid-template-columns: repeat(2, 1fr); gap:16px; }
-    .row-3 { display:grid; grid-template-columns: 2fr 1fr 1fr; gap:16px; }
-    input, select, button, label { font-family: inherit; }
-    input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:10px; }
-    button { padding:10px 16px; border:none; border-radius:12px; cursor:pointer; }
-    .btn-primary { background:#f78da7; color:#fff; }
-    .btn-danger { background:#e74c3c; color:#fff; }
-    .btn-muted { background:#eee; }
-    .products-table { width:100%; border-collapse: collapse; margin-top:12px; }
-    .products-table th, .products-table td { padding:10px; border-bottom:1px solid #eee; text-align:left; vertical-align: top; }
-    .pill { display:inline-block; padding:4px 10px; border-radius:999px; background:#ffe6ee; color:#c94f66; font-weight:600; font-size:12px; }
-    .bar { display:flex; gap:8px; }
-    .preview { max-width:120px; border-radius:10px; display:block; }
-    .right { text-align:right; }
-    .muted { color:#888; font-size: 0.95rem; }
-    .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .hide { display:none; }
-  </style>
 </head>
 <body>
-
   <h1>Admin — Éclaïr</h1>
 
-  <!-- Auth -->
-  <div class="admin-card" id="authBox">
+  <!-- AUTH -->
+  <div class="card" id="authBox">
     <h2>Sign in</h2>
     <div class="row">
-      <input type="email" id="email" placeholder="Email (admin)"/>
+      <input type="email" id="email" placeholder="Admin email"/>
       <input type="password" id="password" placeholder="Password"/>
     </div>
-    <div class="bar" style="margin-top:10px;">
-      <button class="btn-primary" id="btnLogin">Sign in</button>
-      <button class="btn-muted" id="btnCreate">Create admin (once)</button>
+    <div style="margin-top:10px; display:flex; gap:8px;">
+      <button class="btn" id="btnLogin">Sign in</button>
+      <!-- Use ONCE to create the admin account, then remove/comment this button -->
+      <button class="btn muted" id="btnCreate">Create admin (once)</button>
     </div>
-    <p class="muted">Tip: after creating admin, disable the create button in code.</p>
   </div>
 
-  <!-- Dashboard -->
-  <div class="admin-card hide" id="dash">
-    <div class="bar" style="justify-content: space-between;">
+  <!-- DASHBOARD -->
+  <div class="card hide" id="dash">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
       <h2 style="margin:0;">Products</h2>
-      <div class="bar">
+      <div style="display:flex; gap:8px;">
         <select id="filterCategory">
           <option value="">All categories</option>
-          <option value="Pastries">Pastries</option>
-          <option value="Cakes">Cakes</option>
-          <option value="Drinks">Drinks</option>
-          <option value="Sparkling">Sparkling</option>
-          <option value="Iced Tea">Iced Tea</option>
-          <option value="Tea">Tea</option>
-          <option value="Coffee">Coffee</option>
-          <option value="Iced Coffee">Iced Coffee</option>
+          <option>Pastries</option><option>Cakes</option><option>Drinks</option>
+          <option>Sparkling</option><option>Iced Tea</option><option>Tea</option>
+          <option>Coffee</option><option>Iced Coffee</option>
         </select>
-        <button class="btn-muted" id="btnSignOut">Sign out</button>
+        <button class="btn muted" id="btnSignOut">Sign out</button>
       </div>
     </div>
 
-    <!-- Create / Edit -->
-    <div class="grid-2" style="margin-top:16px;">
+    <div class="grid-2" style="margin-top:12px;">
       <div>
         <h3 id="formTitle">Add new product</h3>
+
         <div class="row-3">
           <input id="pName" placeholder="Name"/>
           <input id="pPrice" type="number" placeholder="Price (Rs)"/>
           <select id="pCategory">
-            <option value="Pastries">Pastries</option>
-            <option value="Cakes">Cakes</option>
-            <option value="Drinks">Drinks</option>
-            <option value="Sparkling">Sparkling</option>
-            <option value="Iced Tea">Iced Tea</option>
-            <option value="Tea">Tea</option>
-            <option value="Coffee">Coffee</option>
-            <option value="Iced Coffee">Iced Coffee</option>
+            <option>Pastries</option><option>Cakes</option><option>Drinks</option>
+            <option>Sparkling</option><option>Iced Tea</option><option>Tea</option>
+            <option>Coffee</option><option>Iced Coffee</option>
           </select>
         </div>
 
-        <div class="row" style="margin-top:12px;">
+        <div class="row" style="margin-top:10px;">
           <input id="pImageUrl" placeholder="Image URL (or upload below)"/>
-          <label class="pill" style="cursor:pointer;">
-            <input type="checkbox" id="pVisible" checked /> Visible
-          </label>
+          <label class="pill"><input type="checkbox" id="pVisible" checked/> Visible</label>
         </div>
 
-        <div class="row" style="margin-top:12px;">
+        <!-- CLOUDINARY upload -->
+        <div class="row" style="margin-top:10px;">
           <input type="file" id="pImageFile" accept="image/*"/>
           <img id="pPreview" class="preview" alt="">
         </div>
 
-        <div class="bar" style="margin-top:12px;">
-          <button class="btn-primary" id="btnSave">Save</button>
-          <button class="btn-muted hide" id="btnCancelEdit">Cancel edit</button>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="btn" id="btnSave">Save</button>
+          <button class="btn muted hide" id="btnCancelEdit">Cancel edit</button>
         </div>
+
+        <p class="muted" style="margin-top:8px;">
+          Images are uploaded to Cloudinary (unsigned). Or paste any image URL directly.
+        </p>
       </div>
 
       <div>
-        <h3>How it works</h3>
+        <h3>Notes</h3>
         <p class="muted">
-          • Upload a picture or paste an image URL.<br/>
-          • Choose category, set price, toggle visibility.<br/>
-          • Items appear on <b>Home</b> (Featured) and <b>Menu</b> instantly.
+          • Use categories to organize the menu.<br/>
+          • Toggle “Visible” to hide/show without deleting.<br/>
+          • Changes appear instantly on the website (Home “Featured” & Menu “Shop”).
         </p>
       </div>
     </div>
 
-    <!-- Products list -->
-    <table class="products-table" id="tableProducts">
+    <table class="table" style="margin-top:12px;">
       <thead>
-        <tr>
-          <th>Item</th>
-          <th>Category</th>
-          <th>Price</th>
-          <th>Visible</th>
-          <th class="right">Actions</th>
-        </tr>
+        <tr><th>Item</th><th>Category</th><th>Price</th><th>Visible</th><th class="right">Actions</th></tr>
       </thead>
       <tbody id="tbodyProducts"></tbody>
     </table>
   </div>
 
-  <script>
-    // === Firebase config (use same project as your site) ===
-    const firebaseConfig = {
-      apiKey: "AIzaSyDnYlw01KhjWRXLhatnr9fFcXA4Q_zOs10",
-      authDomain: "eclair-501b7.firebaseapp.com",
-      databaseURL: "https://eclair-501b7-default-rtdb.firebaseio.com",
-      projectId: "eclair-501b7",
-      storageBucket: "eclair-501b7.appspot.com",
-      messagingSenderId: "1042027942352",
-      appId: "1:1042027942352:web:fa760d5609f5713c0d69d5"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
-    const storage = firebase.storage();
+<script>
+/* =========================
+   1) Firebase (AUTH + DB)
+   ========================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDnYlw01KhjWRXLhatnr9fFcXA4Q_zOs10",
+  authDomain: "eclair-501b7.firebaseapp.com",
+  databaseURL: "https://eclair-501b7-default-rtdb.firebaseio.com",
+  projectId: "eclair-501b7",
+  storageBucket: "eclair-501b7.appspot.com", // not used here
+  messagingSenderId: "1042027942352",
+  appId: "1:1042027942352:web:fa760d5609f5713c0d69d5",
+  measurementId: "G-BC1Z5MKSTH"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.database();
 
-    // DOM
-    const authBox = document.getElementById('authBox');
-    const dash = document.getElementById('dash');
-    const email = document.getElementById('email');
-    const password = document.getElementById('password');
-    const btnLogin = document.getElementById('btnLogin');
-    const btnCreate = document.getElementById('btnCreate');
-    const btnSignOut = document.getElementById('btnSignOut');
+/* =========================
+   2) Cloudinary (images)
+   =========================
+   Using unsigned uploads via REST endpoint.
+   Do NOT expose your API secret here.
+*/
+const CLOUDINARY_CLOUD = "dicwpp1ux";
+const CLOUDINARY_UNSIGNED_PRESET = "uufregjJNyXeLfjZ9bb0Aj8kzSh1";
 
-    const pName = document.getElementById('pName');
-    const pPrice = document.getElementById('pPrice');
-    const pCategory = document.getElementById('pCategory');
-    const pImageUrl = document.getElementById('pImageUrl');
-    const pImageFile = document.getElementById('pImageFile');
-    const pPreview = document.getElementById('pPreview');
-    const pVisible = document.getElementById('pVisible');
-    const btnSave = document.getElementById('btnSave');
-    const btnCancelEdit = document.getElementById('btnCancelEdit');
-    const filterCategory = document.getElementById('filterCategory');
-    const tbodyProducts = document.getElementById('tbodyProducts');
-    const formTitle = document.getElementById('formTitle');
+async function uploadToCloudinary(file) {
+  if (!file) return "";
 
-    let editingKey = null;
+  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/upload`;
+  const form = new FormData();
+  form.append("file", file);
+  form.append("upload_preset", CLOUDINARY_UNSIGNED_PRESET);
 
-    // Auth state
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        authBox.classList.add('hide');
-        dash.classList.remove('hide');
-        loadProducts();
-      } else {
-        dash.classList.add('hide');
-        authBox.classList.remove('hide');
-      }
-    });
+  const res = await fetch(url, { method: "POST", body: form });
+  if (!res.ok) throw new Error("Cloudinary upload failed");
+  const data = await res.json();      // { secure_url, public_id, ... }
+  return data.secure_url || data.url; // Prefer https URL
+}
 
-    btnLogin.onclick = async () => {
-      try {
-        await auth.signInWithEmailAndPassword(email.value.trim(), password.value);
-      } catch (e) { alert(e.message); }
-    };
+/* =========================
+   3) DOM elements
+   ========================= */
+const authBox = document.getElementById('authBox');
+const dash = document.getElementById('dash');
+const email = document.getElementById('email');
+const password = document.getElementById('password');
+const btnLogin = document.getElementById('btnLogin');
+const btnCreate = document.getElementById('btnCreate');
+const btnSignOut = document.getElementById('btnSignOut');
 
-    // Create admin (do once, then comment/remove for security)
-    btnCreate.onclick = async () => {
-      try {
-        await auth.createUserWithEmailAndPassword(email.value.trim(), password.value);
-        alert('Admin created. Sign in now.');
-      } catch (e) { alert(e.message); }
-    };
+const pName = document.getElementById('pName');
+const pPrice = document.getElementById('pPrice');
+const pCategory = document.getElementById('pCategory');
+const pImageUrl = document.getElementById('pImageUrl');
+const pImageFile = document.getElementById('pImageFile');
+const pPreview = document.getElementById('pPreview');
+const pVisible = document.getElementById('pVisible');
+const btnSave = document.getElementById('btnSave');
+const btnCancelEdit = document.getElementById('btnCancelEdit');
+const filterCategory = document.getElementById('filterCategory');
+const tbodyProducts = document.getElementById('tbodyProducts');
+const formTitle = document.getElementById('formTitle');
 
-    btnSignOut.onclick = () => auth.signOut();
+let editingKey = null;
 
-    // Preview file
-    pImageFile.onchange = () => {
-      const file = pImageFile.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => { pPreview.src = e.target.result; };
-      reader.readAsDataURL(file);
-    };
+/* =========================
+   4) Auth flow
+   ========================= */
+auth.onAuthStateChanged(user => {
+  if (user) {
+    authBox.classList.add('hide');
+    dash.classList.remove('hide');
+    loadProducts();
+  } else {
+    dash.classList.add('hide');
+    authBox.classList.remove('hide');
+  }
+});
 
-    // Upload image if file selected, else use URL
-    async function resolveImage() {
-      const file = pImageFile.files?.[0];
-      if (file) {
-        const id = `${Date.now()}_${file.name}`;
-        const ref = storage.ref(`product_images/${id}`);
-        await ref.put(file);
-        return await ref.getDownloadURL();
-      }
-      return pImageUrl.value.trim();
+btnLogin.onclick = async () => {
+  try {
+    await auth.signInWithEmailAndPassword(email.value.trim(), password.value);
+  } catch (e) { alert(e.message); }
+};
+
+// Create admin ONCE, then remove this button from the page
+btnCreate.onclick = async () => {
+  try {
+    await auth.createUserWithEmailAndPassword(email.value.trim(), password.value);
+    alert('Admin created. You can now sign in.');
+  } catch (e) { alert(e.message); }
+};
+
+btnSignOut.onclick = () => auth.signOut();
+
+/* =========================
+   5) Image preview
+   ========================= */
+pImageFile.onchange = () => {
+  const file = pImageFile.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => pPreview.src = e.target.result;
+  reader.readAsDataURL(file);
+};
+
+/* =========================
+   6) Save / Edit product
+   ========================= */
+function clearForm() {
+  editingKey = null;
+  formTitle.textContent = 'Add new product';
+  pName.value = '';
+  pPrice.value = '';
+  pCategory.value = 'Pastries';
+  pImageUrl.value = '';
+  pImageFile.value = '';
+  pPreview.src = '';
+  pVisible.checked = true;
+  btnCancelEdit.classList.add('hide');
+}
+
+btnCancelEdit.onclick = clearForm;
+
+btnSave.onclick = async () => {
+  try {
+    const name = pName.value.trim();
+    const price = Number(pPrice.value || 0);
+    const category = pCategory.value;
+    const visible = pVisible.checked;
+    if (!name) return alert('Name is required');
+
+    // If a file is chosen, upload to Cloudinary, else use URL in field
+    let image = pImageUrl.value.trim();
+    const file = pImageFile.files?.[0];
+    if (file) image = await uploadToCloudinary(file);
+
+    const data = { name, price, category, image: image || '', visible, updatedAt: Date.now() };
+
+    if (editingKey) {
+      await db.ref(`products/${editingKey}`).update(data);
+    } else {
+      data.createdAt = Date.now();
+      await db.ref('products').push(data);
     }
 
-    function clearForm() {
-      editingKey = null;
-      formTitle.textContent = 'Add new product';
-      pName.value = '';
-      pPrice.value = '';
-      pCategory.value = 'Pastries';
-      pImageUrl.value = '';
-      pImageFile.value = '';
-      pPreview.src = '';
-      pVisible.checked = true;
-      btnCancelEdit.classList.add('hide');
+    clearForm();
+  } catch (e) {
+    alert(e.message);
+  }
+};
+
+/* =========================
+   7) List + actions
+   ========================= */
+filterCategory.onchange = loadProducts;
+
+function renderRow(key, p) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <div style="display:flex; gap:10px; align-items:flex-start;">
+        <img src="${p.image || ''}" class="preview" alt="">
+        <div>
+          <div style="font-weight:700">${p.name || ''}</div>
+          <div class="muted" style="max-width:420px;word-break:break-all;">${p.image || 'No image'}</div>
+        </div>
+      </div>
+    </td>
+    <td><span class="pill">${p.category || '-'}</span></td>
+    <td>Rs ${Number(p.price||0)}</td>
+    <td>${p.visible ? 'Yes' : 'No'}</td>
+    <td class="right">
+      <button class="btn muted" data-edit="${key}">Edit</button>
+      <button class="btn danger" data-del="${key}">Delete</button>
+    </td>
+  `;
+
+  tr.querySelector(`[data-edit="${key}"]`).onclick = () => {
+    editingKey = key;
+    formTitle.textContent = 'Edit product';
+    pName.value = p.name || '';
+    pPrice.value = Number(p.price || 0);
+    pCategory.value = p.category || 'Pastries';
+    pImageUrl.value = p.image || '';
+    pPreview.src = p.image || '';
+    pVisible.checked = !!p.visible;
+    btnCancelEdit.classList.remove('hide');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  tr.querySelector(`[data-del="${key}"]`).onclick = async () => {
+    if (!confirm('Delete this product?')) return;
+    await db.ref(`products/${key}`).remove();
+  };
+
+  return tr;
+}
+
+function loadProducts() {
+  const cat = filterCategory.value;
+  db.ref('products').orderByChild('createdAt').on('value', snap => {
+    tbodyProducts.innerHTML = '';
+    const obj = snap.val() || {};
+    const entries = Object.entries(obj).sort((a,b)=> (b[1].createdAt||0) - (a[1].createdAt||0));
+    for (const [key, p] of entries) {
+      if (cat && p.category !== cat) continue;
+      tbodyProducts.appendChild(renderRow(key, p));
     }
-
-    btnCancelEdit.onclick = clearForm;
-
-    btnSave.onclick = async () => {
-      const name = pName.value.trim();
-      const price = Number(pPrice.value || 0);
-      const category = pCategory.value;
-      const visible = pVisible.checked;
-
-      if (!name || !category) return alert('Please fill in name and category');
-
-      try {
-        const image = await resolveImage();
-        const data = { name, price, category, image: image || '', visible, updatedAt: Date.now() };
-        if (editingKey) {
-          await db.ref(`products/${editingKey}`).update(data);
-        } else {
-          data.createdAt = Date.now();
-          await db.ref('products').push(data);
-        }
-        clearForm();
-      } catch (e) {
-        alert(e.message);
-      }
-    };
-
-    filterCategory.onchange = () => loadProducts();
-
-    function renderRow(key, p) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <div style="display:flex; gap:10px; align-items:flex-start;">
-            <img src="${p.image || ''}" class="preview" alt="">
-            <div>
-              <div style="font-weight:700">${p.name || ''}</div>
-              <div class="muted">${p.image ? p.image : 'No image'}</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="pill">${p.category || '-'}</span></td>
-        <td>Rs ${Number(p.price||0)}</td>
-        <td>${p.visible ? 'Yes' : 'No'}</td>
-        <td class="right">
-          <div class="bar" style="justify-content:flex-end;">
-            <button class="btn-muted" data-edit="${key}">Edit</button>
-            <button class="btn-danger" data-del="${key}">Delete</button>
-          </div>
-        </td>
-      `;
-      // Wire buttons
-      tr.querySelector(`[data-edit="${key}"]`).onclick = () => {
-        editingKey = key;
-        formTitle.textContent = 'Edit product';
-        pName.value = p.name || '';
-        pPrice.value = Number(p.price || 0);
-        pCategory.value = p.category || 'Pastries';
-        pImageUrl.value = p.image || '';
-        pPreview.src = p.image || '';
-        pVisible.checked = !!p.visible;
-        btnCancelEdit.classList.remove('hide');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
-      tr.querySelector(`[data-del="${key}"]`).onclick = async () => {
-        if (!confirm('Delete this product?')) return;
-        await db.ref(`products/${key}`).remove();
-      };
-      return tr;
-    }
-
-    function loadProducts() {
-      const cat = filterCategory.value;
-      const ref = db.ref('products').orderByChild('createdAt');
-      ref.on('value', snap => {
-        tbodyProducts.innerHTML = '';
-        const obj = snap.val() || {};
-        const entries = Object.entries(obj).sort((a,b)=> (b[1].createdAt||0) - (a[1].createdAt||0));
-        for (const [key, p] of entries) {
-          if (cat && p.category !== cat) continue;
-          tbodyProducts.appendChild(renderRow(key, p));
-        }
-      });
-    }
-  </script>
+  });
+}
+</script>
 </body>
 </html>
