@@ -475,3 +475,13 @@ input, select, textarea { font-size: 16px; }
 @media (max-width: 480px){
   .logo img { height: 60px; }
 }
+
+/* Keep hamburger above the slide-out menu on mobile */
+@media (max-width: 768px) {
+  .menu-toggle { position: relative; z-index: 1001; }
+  nav .nav-links { z-index: 1000; } /* ensure panel sits above page, below the button */
+}
+
+/* Lock scroll while mobile menu is open */
+body.nav-open { overflow: hidden; }
+
