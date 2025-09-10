@@ -12,17 +12,16 @@
   <link rel="stylesheet" href="style.css"/>
 
   <style>
-    /* Mobile menu toggle */
+    /* Keep your existing behaviors */
     .nav-links { display: flex; list-style: none; }
     .nav-links.show { display: block; }
 
-    /* Hero overlay text */
     .overlay p#greeting {
-      font-size: 1.5rem; margin: 0.5rem 0; color: #fff; transition: opacity 1s ease; opacity: 0;
+      font-size: 1.5rem; margin: 0.5rem 0; color: #fff;
+      transition: opacity 1s ease; opacity: 0;
     }
     .overlay p#greeting.show { opacity: 1; }
 
-    /* Map link style */
     .map-fullwidth a {
       display: inline-block; text-align: center; margin: 15px auto 0; padding: 10px 20px;
       background-color: #d84f6c; color: #fff; font-weight: bold; text-decoration: none;
@@ -50,9 +49,9 @@
   <!-- Hero Section -->
   <header class="hero">
     <div class="hero-images">
-      <img src="1.jpg" alt="Pic 1">
-      <img src="2.jpg" alt="Pic 2">
-      <img src="3.jpg" alt="Pic 3">
+      <img src="1.jpg" alt="Pastry 1">
+      <img src="2.jpg" alt="Pastry 2">
+      <img src="3.jpg" alt="Pastry 3">
     </div>
 
     <div class="overlay">
@@ -67,7 +66,9 @@
   <!-- About -->
   <section id="about">
     <h2 style="color: beige;">About Éclaïr</h2>
-    <p style="color: beige;">At Éclaïr, we bring you artisanal French-inspired pastries and specialty coffees crafted with the finest ingredients.</p>
+    <p style="color: beige;">
+      At Éclaïr, we bring you artisanal French-inspired pastries and specialty coffees crafted with the finest ingredients.
+    </p>
   </section>
 
   <!-- Decorative Images -->
@@ -82,13 +83,13 @@
     <h2>Our Specialties</h2>
     <div class="menu-items">
       <div class="item"><img src="5.jpg" alt="Cookies"></div>
-      <div class="item"><img src="10.jpg" alt="Eclair"></div>
+      <div class="item"><img src="10.jpg" alt="Éclair"></div>
       <div class="item"><img src="9.jpg" alt="Croissant"></div>
     </div>
     <a href="menu.html" class="btn">View Full Menu</a>
   </section>
 
-  <!-- NEW: Featured Products (live from Firebase) -->
+  <!-- Featured Products (live) -->
   <section id="featured">
     <h2>Featured Products</h2>
     <p>Updated by admin — refresh-free 🔄</p>
@@ -112,7 +113,7 @@
 
   <!-- Decorative Images -->
   <div class="decor-img">
-    <img src="outside1.jpg" alt="Interior">
+    <img src="outside1.jpg" alt="Exterior">
     <img src="inside.jpg" alt="Interior">
     <img src="inside3.jpg" alt="Interior">
   </div>
@@ -121,10 +122,10 @@
   <section id="contact">
     <h2 style="color: beige;">Get in Touch</h2>
     <div class="social-links">
-      <a href="https://www.instagram.com/_eclair_86" target="_blank" class="instagram">Instagram</a>
-      <a href="https://wa.me/23057053770" target="_blank" class="whatsapp">WhatsApp</a>
-      <a href="#" target="_blank" class="facebook">Facebook</a>
-      <a href="#" target="_blank" class="tiktok">TikTok</a>
+      <a href="https://www.instagram.com/_eclair_86" target="_blank" class="instagram" rel="noopener">Instagram</a>
+      <a href="https://wa.me/23057053770" target="_blank" class="whatsapp" rel="noopener">WhatsApp</a>
+      <a href="#" target="_blank" class="facebook" rel="noopener">Facebook</a>
+      <a href="#" target="_blank" class="tiktok" rel="noopener">TikTok</a>
     </div>
   </section>
 
@@ -137,26 +138,72 @@
         allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
       </iframe>
     </div>
-    <a href="https://www.google.com/maps/place/%C3%89cla%C3%AFr/@-20.2317384,57.4583981,15z/data=!3m1!4b1!4m6!3m5!1s0x217c5b007e587601:0x9c7b663d58b43cb!8m2!3d-20.2317588!4d57.4686764!16s%2Fg%2F11x0ddy63f?entry=ttu&g_ep=EgoyMDI1MDgxOC4wIKXMDSoASAFQAw%3D%3D"
-       target="_blank">📍 Open in Google Maps</a>
+    <a href="https://www.google.com/maps/place/%C3%89cla%C3%AFr/@-20.2317384,57.4583981,15z/data=!3m1!4b1!4m6!3m5!1s0x217c5b007e587601:0x9c7b663d58b43cb!8m2!3d-20.2317588!4d57.4686764!16s%2Fg%2F11x0ddy63f?entry=ttu"
+       target="_blank" rel="noopener">📍 Open in Google Maps</a>
   </section>
 
   <footer>
     <p style="color: beige;">Éclaïr</p>
   </footer>
 
-  <!-- Your scripts -->
+  <!-- Your UI behaviors -->
   <script src="script.js"></script>
 
-  <!-- Firebase + App (shared init & product rendering) -->
+  <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="app.js"></script>
 
+  <!-- Load Featured (reads RTDB /products) -->
   <script>
-    // Load 6 most recent visible products as "Featured"
-    window.loadFeaturedProducts && window.loadFeaturedProducts();
+    (function initFirebase(){
+      const firebaseConfig = {
+        apiKey: "AIzaSyDnYlw01KhjWRXLhatnr9fFcXA4Q_zOs10",
+        authDomain: "eclair-501b7.firebaseapp.com",
+        databaseURL: "https://eclair-501b7-default-rtdb.firebaseio.com",
+        projectId: "eclair-501b7",
+        storageBucket: "eclair-501b7.appspot.com",
+        messagingSenderId: "1042027942352",
+        appId: "1:1042027942352:web:fa760d5609f5713c0d69d5",
+        measurementId: "G-BC1Z5MKSTH"
+      };
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      window.__DB__ = firebase.database();
+    })();
+
+    function loadFeaturedProducts(limit = 6) {
+      const grid = document.getElementById('featured-grid');
+      if (!grid || !window.__DB__) return;
+
+      // Show a tiny placeholder while loading
+      grid.innerHTML = '<div style="opacity:.6;">Loading…</div>';
+
+      window.__DB__.ref('products').once('value').then(snap => {
+        const obj = snap.val() || {};
+        const items = Object.values(obj)
+          .filter(p => p.visible)
+          .sort((a,b)=> (b.createdAt||0)-(a.createdAt||0))
+          .slice(0, limit);
+
+        if (items.length === 0) {
+          grid.innerHTML = '<p style="opacity:.7;">No featured products yet.</p>';
+          return;
+        }
+
+        grid.innerHTML = items.map(p => `
+          <div class="product-card">
+            <img src="${p.image||''}" alt="${p.name||''}">
+            <h4>${p.name||''}</h4>
+            <p class="price">Rs ${Number(p.price||0)}</p>
+            <a href="menu.html#shop" class="btn">Order</a>
+          </div>
+        `).join('');
+      }).catch(err => {
+        console.error(err);
+        grid.innerHTML = '<p style="color:#c00;">Could not load featured items.</p>';
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => loadFeaturedProducts(6));
   </script>
 </body>
 </html>
