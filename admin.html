@@ -157,7 +157,6 @@ const db   = firebase.database();
 // ===== Cloudinary upload (unsigned) =====
 const CLOUDINARY_CLOUD = "dicwpp1ux";
 const CLOUDINARY_UNSIGNED_PRESET = "uufregjJNyXeLfjZ9bb0Aj8kzSh1";
-const CLOUDINARY_UNSIGNED_PRESET = "RhMAQ5ey7zYdRLwtr5fxjqVrfgN2";
 async function uploadToCloudinary(file) {
   if (!file) return "";
   const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/upload`;
