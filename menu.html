@@ -8,15 +8,8 @@
   <link rel="stylesheet" href="style.css"/>
   <script src="script.js" defer></script>
 
-  <!-- Firebase compat -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
-  <!-- Shared app logic -->
-  <script src="app.js" defer></script>
-
   <style>
-    /* Cart container kept minimal; style.css covers cards/grids */
+    /* Minimal cart styling; your style.css handles the cards/grids */
     #cart { position:fixed; right:20px; top:20px; background:#fff; border-radius:15px; padding:15px; width:320px; max-height:90vh; overflow:auto; box-shadow:0 4px 18px rgba(0,0,0,.15); display:none; z-index:999; }
     .cart-item { display:flex; justify-content:space-between; gap:8px; margin-bottom:8px; }
     .btn { display:inline-block; padding:10px 18px; background:#f78da7; color:#fff; border-radius:25px; text-decoration:none; cursor:pointer; font-weight:600; }
@@ -47,6 +40,7 @@
     </div>
 
     <h2 id="shop" style="text-align:center;">Shop</h2>
+    <!-- MOUNT POINT (required) -->
     <div id="shop-grid" class="products-grid"></div>
 
     <div style="text-align:center; margin-top:16px;">
@@ -79,10 +73,109 @@
     </div>
   </div>
 
+  <!-- Firebase compat (order matters) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <!-- Shared logic -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.loadShop) window.loadShop();
-    });
+    // Shared Firebase init + renders + cart
+    (function initFirebase(){
+      const firebaseConfig = {
+        apiKey: "AIzaSyDnYlw01KhjWRXLhatnr9fFcXA4Q_zOs10",
+        authDomain: "eclair-501b7.firebaseapp.com",
+        databaseURL: "https://eclair-501b7-default-rtdb.firebaseio.com",
+        projectId: "eclair-501b7",
+        storageBucket: "eclair-501b7.appspot.com",
+        messagingSenderId: "1042027942352",
+        appId: "1:1042027942352:web:fa760d5609f5713c0d69d5",
+        measurementId: "G-BC1Z5MKSTH"
+      };
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      window.__DB__ = firebase.database();
+    })();
+
+    // ---- Shop render (live) ----
+    function loadShop(){
+      const mount = document.getElementById('shop-grid');
+      if (!mount || !window.__DB__) return;
+      const db = window.__DB__;
+
+      function render(list){
+        mount.innerHTML = list.map(p => `
+          <div class="product-card">
+            <img src="${p.image||''}" alt="${p.name||''}">
+            <h4>${p.name||''}</h4>
+            <p class="price">Rs ${Number(p.price||0)}</p>
+            <button class="btn" onclick='addToCart(${JSON.stringify(p.name)}, ${Number(p.price||0)})'>Add to Cart</button>
+          </div>
+        `).join('');
+      }
+
+      db.ref('products').on('value', snap => {
+        const obj = snap.val() || {};
+        let items = Object.values(obj).filter(p => p.visible);
+        const params = new URLSearchParams(location.search);
+        const cat = params.get('cat');
+        if (cat) items = items.filter(i => i.category === cat);
+        items.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
+        render(items);
+      });
+    }
+
+    // ---- Cart logic ----
+    let CART = [];
+    function updateCartBadge(){ const el = document.getElementById('cart-count'); if (el) el.textContent = CART.length; }
+    function renderCart(){
+      const itemsDiv = document.getElementById('cart-items');
+      const totalEl = document.getElementById('cart-total');
+      if (!itemsDiv || !totalEl) return;
+      itemsDiv.innerHTML = '';
+      let total = 0;
+      CART.forEach((it, idx) => {
+        total += Number(it.price||0);
+        itemsDiv.innerHTML += `<div class="cart-item"><span>${it.name}</span><span>Rs ${it.price}</span><button onclick="removeFromCart(${idx})">❌</button></div>`;
+      });
+      totalEl.textContent = total;
+      updateCartBadge();
+    }
+    function addToCart(name, price){ CART.push({name, price:Number(price||0)}); renderCart(); }
+    function removeFromCart(index){ CART.splice(index,1); renderCart(); }
+    function toggleCart(){
+      const cartDiv = document.getElementById('cart');
+      if (!cartDiv) return;
+      cartDiv.style.display = cartDiv.style.display==='block' ? 'none' : 'block';
+      renderCart();
+    }
+    async function checkout(){
+      if (!window.__DB__) return alert("DB not ready");
+      if (CART.length === 0) return alert("Cart is empty!");
+      const name = (document.getElementById('customer-name')||{}).value?.trim();
+      const phone = (document.getElementById('customer-phone')||{}).value?.trim();
+      const method = (document.getElementById('payment-method')||{}).value || 'Pay at Pickup';
+      const phoneRegex = /^5\d{7}$/; // MU mobile
+      if (!name || !phoneRegex.test(phone||'')) return alert('Enter a name and a valid phone (starts with 5, 8 digits).');
+
+      const order = { customer: { name, phone }, items: CART, paymentMethod: method, createdAt: Date.now() };
+      try{
+        await window.__DB__.ref('orders').push(order);
+        alert('Order placed successfully!');
+        CART = [];
+        renderCart();
+        const cartDiv = document.getElementById('cart'); if (cartDiv) cartDiv.style.display = 'none';
+        document.getElementById('customer-name').value='';
+        document.getElementById('customer-phone').value='';
+      }catch(e){ alert(e.message); }
+    }
+
+    // Expose for buttons
+    window.addToCart = addToCart;
+    window.removeFromCart = removeFromCart;
+    window.toggleCart = toggleCart;
+    window.checkout = checkout;
+
+    // Start
+    document.addEventListener('DOMContentLoaded', loadShop);
   </script>
 </body>
 </html>
