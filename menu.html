@@ -6,13 +6,14 @@
   <title>Éclaïr — Menu</title>
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css"/>
-  <script src="script.js" defer></script>
 </head>
 <body id="top">
   <!-- Navbar -->
   <nav>
-    <div class="logo"><a href="index.html" aria-label="Éclaïr Home"><img src="logo.jpg" alt="Éclaïr logo"></a></div>
-    <button class="menu-toggle" aria-label="Toggle Menu">&#9776;</button>
+    <div class="logo">
+      <a href="index.html" aria-label="Éclaïr Home"><img src="logo.jpg" alt="Éclaïr logo"></a>
+    </div>
+    <button class="menu-toggle" aria-label="Toggle Menu" aria-expanded="false">&#9776;</button>
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
       <li><a class="active" href="menu.html">Menu</a></li>
@@ -397,5 +398,8 @@
 
     document.addEventListener('DOMContentLoaded', loadAll);
   </script>
+
+  <!-- Hamburger + UI helpers -->
+  <script src="script.js"></script>
 </body>
 </html>
