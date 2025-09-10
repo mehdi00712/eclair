@@ -1,162 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Éclaïr</title>
-
-  <!-- Google Fonts: Alice -->
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
-
-  <!-- CSS -->
   <link rel="stylesheet" href="style.css"/>
+  <script src="script.js" defer></script>
 
-  <style>
-    /* Mobile menu toggle */
-    .nav-links { display: flex; list-style: none; }
-    .nav-links.show { display: block; }
+  <!-- Firebase (compat) for simplicity across pages) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-    /* Hero overlay text */
-    .overlay p#greeting {
-      font-size: 1.5rem; margin: 0.5rem 0; color: #fff; transition: opacity 1s ease; opacity: 0;
-    }
-    .overlay p#greeting.show { opacity: 1; }
-
-    /* Map link style */
-    .map-fullwidth a {
-      display: inline-block; text-align: center; margin: 15px auto 0; padding: 10px 20px;
-      background-color: #d84f6c; color: #fff; font-weight: bold; text-decoration: none;
-      border-radius: 6px; font-size: 1.1rem;
-    }
-    .map-fullwidth a:hover { background-color: #6d3349; }
-  </style>
+  <!-- Shared app logic (DB reads & UI rendering) -->
+  <script src="app.js" defer></script>
 </head>
 <body>
-
-  <!-- Navigation -->
-  <nav>
-    <div class="logo"><img src="logo.jpg" alt="Éclaïr logo"></div>
-    <button class="menu-toggle" aria-label="Toggle Menu">&#9776;</button>
+  <!-- Simple header using existing styles -->
+  <header class="navbar">
+    <div class="logo"><a href="index.html">Éclaïr</a></div>
     <ul class="nav-links">
-      <li><a href="#about">About Éclaïr</a></li>
-      <li><a href="#menu">Our Specialties</a></li>
-      <li><a href="#hours">Hours</a></li>
-      <li><a href="#contact">Get in Touch</a></li>
-      <li><a href="menu.html" class="hero-menu-btn">Full Menu</a></li>
-      <li><a href="admin.html" class="hero-menu-btn">Admin</a></li>
+      <li><a class="active" href="index.html">Home</a></li>
+      <li><a href="menu.html">Menu</a></li>
+      <li><a href="admin.html">Admin</a></li>
     </ul>
-  </nav>
-
-  <!-- Hero Section -->
-  <header class="hero">
-    <div class="hero-images">
-      <img src="1.jpg" alt="Pic 1">
-      <img src="2.jpg" alt="Pic 2">
-      <img src="3.jpg" alt="Pic 3">
-    </div>
-
-    <div class="overlay">
-      <h1>Éclaïr</h1>
-      <p id="greeting"></p>
-      <p>- French By Origin -</p>
-      <p>- Refined by Ingredients -</p>
-      <a href="#menu" class="btn">See Our Specialities</a>
-    </div>
   </header>
 
-  <!-- About -->
-  <section id="about">
-    <h2 style="color: beige;">About Éclaïr</h2>
-    <p style="color: beige;">At Éclaïr, we bring you artisanal French-inspired pastries and specialty coffees crafted with the finest ingredients.</p>
-  </section>
-
-  <!-- Decorative Images -->
-  <div class="decor-img">
-    <img src="6.jpg" alt="Pastries">
-    <img src="8.jpg" alt="Pastries">
-    <img src="3.jpg" alt="Pastries">
-  </div>
-
-  <!-- Menu (Specialties) -->
-  <section id="menu">
-    <h2>Our Specialties</h2>
-    <div class="menu-items">
-      <div class="item"><img src="5.jpg" alt="Cookies"></div>
-      <div class="item"><img src="10.jpg" alt="Eclair"></div>
-      <div class="item"><img src="9.jpg" alt="Croissant"></div>
+  <!-- Hero from your existing layout (kept minimal to avoid conflicts) -->
+  <section class="hero">
+    <div class="overlay">
+      <h1>Fresh • Sweet • Daily</h1>
+      <p id="greeting">Welcome to Éclaïr — artisan bakes & drinks</p>
+      <a class="btn" href="menu.html#shop">Order now</a>
     </div>
-    <a href="menu.html" class="btn">View Full Menu</a>
   </section>
 
-  <!-- NEW: Featured Products (live from Firebase) -->
-  <section id="featured">
-    <h2>Featured Products</h2>
-    <p>Updated by admin — refresh-free 🔄</p>
+  <!-- Featured products -->
+  <section style="padding: 40px 20px;">
+    <h2 style="text-align:center; margin-bottom: 10px;">Featured</h2>
+    <p style="text-align:center; margin:0 0 20px;">Updated by the Admin</p>
     <div id="featured-grid" class="products-grid"></div>
-    <a href="menu.html#shop" class="btn">Shop All</a>
   </section>
 
-  <!-- Hours -->
-  <section id="hours" class="hours">
-    <h2 style="color: beige;">Opening Hours</h2>
-    <ul id="opening-hours">
-      <li><span>Monday:</span> 8:00 AM – 6:00 PM</li>
-      <li><span>Tuesday:</span> 9:00 AM – 7:00 PM</li>
-      <li><span>Wednesday:</span> 8:30 AM – 6:30 PM</li>
-      <li><span>Thursday:</span> 9:00 AM – 5:30 PM</li>
-      <li><span>Friday:</span> 8:00 AM – 8:00 PM</li>
-      <li><span>Saturday:</span> 9:00 AM – 6:00 PM</li>
-      <li><span>Sunday:</span> Closed</li>
-    </ul>
-  </section>
-
-  <!-- Decorative Images -->
-  <div class="decor-img">
-    <img src="outside1.jpg" alt="Interior">
-    <img src="inside.jpg" alt="Interior">
-    <img src="inside3.jpg" alt="Interior">
-  </div>
-
-  <!-- Contact / Social Links -->
-  <section id="contact">
-    <h2 style="color: beige;">Get in Touch</h2>
-    <div class="social-links">
-      <a href="https://www.instagram.com/_eclair_86" target="_blank" class="instagram">Instagram</a>
-      <a href="https://wa.me/23057053770" target="_blank" class="whatsapp">WhatsApp</a>
-      <a href="#" target="_blank" class="facebook">Facebook</a>
-      <a href="#" target="_blank" class="tiktok">TikTok</a>
-    </div>
-  </section>
-
-  <!-- Full-width Map -->
-  <section class="map-fullwidth" style="position: relative; height: auto; overflow: hidden; text-align: center;">
-    <div style="width:100%; height:400px; position: relative;">
-      <iframe
-        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3885.798593618362!2d57.46667641534631!3d-20.23175878538808!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x217c5b007e587601%3A0x9c7b663d58b43cb!2s%C3%89cla%C3%AFr!5e0!3m2!1sen!2smu!4v1723808460660!5m2!1sen!2smu"
-        style="width:100%; height:100%; border:0; position: absolute; top:0; left:0;"
-        allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-      </iframe>
-    </div>
-    <a href="https://www.google.com/maps/place/%C3%89cla%C3%AFr/@-20.2317384,57.4583981,15z/data=!3m1!4b1!4m6!3m5!1s0x217c5b007e587601:0x9c7b663d58b43cb!8m2!3d-20.2317588!4d57.4686764!16s%2Fg%2F11x0ddy63f?entry=ttu&g_ep=EgoyMDI1MDgxOC4wIKXMDSoASAFQAw%3D%3D"
-       target="_blank">📍 Open in Google Maps</a>
-  </section>
-
-  <footer>
-    <p style="color: beige;">Éclaïr</p>
+  <!-- Footer -->
+  <footer style="text-align:center; padding:20px 0;">
+    <small>&copy; <span id="year"></span> Éclaïr</small>
   </footer>
 
-  <!-- Your scripts -->
-  <script src="script.js"></script>
-
-  <!-- Firebase + App (shared init & product rendering) -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="app.js"></script>
-
   <script>
-    // Load 6 most recent visible products as "Featured"
-    window.loadFeaturedProducts && window.loadFeaturedProducts();
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.loadFeaturedProducts) window.loadFeaturedProducts(6);
+    });
   </script>
 </body>
 </html>
