@@ -9,16 +9,21 @@
   <script src="script.js" defer></script>
 
   <style>
-    /* Minimal cart & modal styling; your style.css handles product cards/grid */
+    /* Minimal extras; your style.css keeps the look */
+    .chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:10px 0 20px; }
+    .chip { display:inline-block; padding:8px 14px; border-radius:999px; background:#fbe1e9; color:#c94f66; font-weight:700; cursor:pointer; text-decoration:none; }
+    .chip.active { background:#f78da7; color:#fff; }
+    .category-block { margin: 28px auto 40px; max-width: 1100px; }
+    .category-block h2 { text-align:center; color:#c94f66; margin-bottom:12px; }
+    .category-block .products-grid { margin-top: 10px; }
+    /* Cart & modal (lightweight) */
     #cart { position:fixed; right:20px; top:20px; background:#fff; border-radius:15px; padding:15px; width:340px; max-height:90vh; overflow:auto; box-shadow:0 4px 18px rgba(0,0,0,.15); display:none; z-index:999; }
     .cart-item { display:flex; justify-content:space-between; gap:8px; margin-bottom:8px; align-items:center; }
     .btn { display:inline-block; padding:10px 18px; background:#f78da7; color:#fff; border-radius:25px; text-decoration:none; cursor:pointer; font-weight:600; }
-    .btn.small { padding:6px 12px; border-radius:14px; font-weight:600; }
+    .btn.small { padding:6px 12px; border-radius:14px; }
     .btn.icon { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:0; }
     .qty { display:inline-flex; align-items:center; gap:8px; }
     .muted { color:#777; }
-
-    /* Modal */
     .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:998; }
     .modal { background:#fff; width:min(720px, 92vw); border-radius:16px; box-shadow:0 10px 28px rgba(0,0,0,.2); overflow:hidden; }
     .modal header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#fff3f6; }
@@ -49,17 +54,11 @@
     <h1 style="text-align:center;">Our Full Menu</h1>
     <p style="text-align:center;">Updated live by the Admin</p>
 
-    <!-- Category shortcuts (work with ?cat=) -->
-    <div style="text-align:center; margin:10px 0 20px;">
-      <a href="menu.html#shop" class="btn">All</a>
-      <a href="menu.html?cat=Pastries#shop" class="btn">Pastries</a>
-      <a href="menu.html?cat=Cakes#shop" class="btn">Cakes</a>
-      <a href="menu.html?cat=Drinks#shop" class="btn">Drinks</a>
-      <a href="menu.html?cat=Coffee#shop" class="btn">Coffee</a>
-    </div>
+    <!-- Dynamic category chips -->
+    <div id="chips" class="chips"></div>
 
-    <h2 id="shop" style="text-align:center;">Shop</h2>
-    <div id="shop-grid" class="products-grid"></div>
+    <!-- All categories rendered below -->
+    <div id="sections"></div>
 
     <div style="text-align:center; margin-top:16px;">
       <button class="btn" onclick="toggleCart()">🛒 View Cart (<span id="cart-count">0</span>)</button>
@@ -162,41 +161,94 @@
       window.__DB__ = firebase.database();
     })();
 
-    // ------ Render Shop ------
-    const shop = document.getElementById('shop-grid');
-    let PRODUCTS = {};
-    function renderShop(list){
-      shop.innerHTML = list.map(p => `
-        <div class="product-card">
-          <img src="${p.image||''}" alt="${p.name||''}">
-          <h4>${p.name||''}</h4>
-          <p class="price">${
-            (p.sizes && p.sizes.length)
-              ? 'From Rs ' + Math.min(...p.sizes.map(s=>Number(s.price||0)))
-              : 'Rs ' + Number(p.basePrice||0)
-          }</p>
-          <button class="btn" onclick='openModal(${JSON.stringify(p._id)})'>Customize</button>
-        </div>
-      `).join('');
-    }
+    // ---------- Utilities ----------
+    const PREFERRED_ORDER = [
+      "Pastries","Cakes","Drinks","Sparkling","Iced Tea","Tea","Coffee","Iced Coffee"
+    ];
+    const slug = s => String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
 
-    function loadShop(){
-      const params = new URLSearchParams(location.search);
-      const cat = params.get('cat');
-
-      window.__DB__.ref('products').on('value', snap => {
-        const obj = snap.val() || {};
-        // attach ids
-        const all = Object.entries(obj).map(([id, p]) => ({...p, _id:id})).filter(p=>p.visible);
-        const filtered = cat ? all.filter(i => i.category === cat) : all;
-        // sort newest first
-        filtered.sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
-        PRODUCTS = Object.fromEntries(filtered.map(p => [p._id, p]));
-        renderShop(filtered);
+    function sortCategories(keys){
+      return keys.slice().sort((a,b) => {
+        const ia = PREFERRED_ORDER.indexOf(a);
+        const ib = PREFERRED_ORDER.indexOf(b);
+        if (ia !== -1 || ib !== -1) {
+          return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+        }
+        return a.localeCompare(b);
       });
     }
 
-    // ------ Modal / Customize ------
+    // ---------- Render ALL categories as blocks ----------
+    const chips = document.getElementById('chips');
+    const sections = document.getElementById('sections');
+    let PRODUCTS = {}; // id -> product
+    let GROUPS = {};   // category -> [products]
+
+    function renderChips(catKeys, activeCat){
+      chips.innerHTML = [
+        `<a class="chip ${!activeCat ? 'active':''}" href="menu.html#top">All</a>`,
+        ...catKeys.map(k => `<a class="chip ${activeCat===k?'active':''}" href="#cat-${slug(k)}">${k}</a>`)
+      ].join('');
+    }
+
+    function cardHTML(p){
+      const fromPrice = (p.sizes && p.sizes.length)
+        ? Math.min(...p.sizes.map(s => Number(s.price||0)))
+        : Number(p.basePrice||0);
+      return `
+        <div class="product-card">
+          <img src="${p.image||''}" alt="${p.name||''}">
+          <h4>${p.name||''}</h4>
+          <p class="price">From Rs ${fromPrice}</p>
+          <button class="btn" onclick='openModal(${JSON.stringify(p._id)})'>Customize</button>
+        </div>
+      `;
+    }
+
+    function renderSections(filterCat=null){
+      const keys = Object.keys(GROUPS);
+      const showKeys = filterCat ? keys.filter(k => k===filterCat) : keys;
+      sections.innerHTML = showKeys.map(cat => `
+        <section class="category-block" id="cat-${slug(cat)}">
+          <h2>${cat}</h2>
+          <div class="products-grid">
+            ${GROUPS[cat].map(cardHTML).join('')}
+          </div>
+        </section>
+      `).join('');
+    }
+
+    function loadAll(){
+      const urlCat = new URLSearchParams(location.search).get('cat');
+      window.__DB__.ref('products').on('value', snap => {
+        const obj = snap.val() || {};
+        const all = Object.entries(obj)
+          .map(([id,p]) => ({...p, _id:id}))
+          .filter(p => p.visible);
+
+        // Group by category
+        const groups = {};
+        for (const p of all) {
+          const cat = p.category || 'Other';
+          (groups[cat] ||= []).push(p);
+        }
+        // Sort each group newest first
+        for (const k in groups) {
+          groups[k].sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
+        }
+        // Sort categories (preferred order first, then alphabetic)
+        const catKeys = sortCategories(Object.keys(groups));
+
+        // Keep globals
+        PRODUCTS = Object.fromEntries(all.map(p => [p._id, p]));
+        GROUPS = Object.fromEntries(catKeys.map(k => [k, groups[k]]));
+
+        renderChips(catKeys, urlCat);
+        renderSections(urlCat || null);
+      });
+    }
+
+    // ---------- Modal / Customize (sizes, flavours, toppings, qty) ----------
     const backdrop = document.getElementById('modalBackdrop');
     const modName = document.getElementById('modName');
     const modCategory = document.getElementById('modCategory');
@@ -210,7 +262,7 @@
     const modQty = document.getElementById('modQty');
     const modTotal = document.getElementById('modTotal');
 
-    let CURRENT = null; // { product, sizePrice, basePrice, qty, toppings:[indices], flavour }
+    let CURRENT = null;
     function openModal(id){
       const p = PRODUCTS[id];
       if (!p) return;
@@ -235,18 +287,14 @@
         sizeChoice.style.display = '';
         modSize.innerHTML = CURRENT.sizes.map((s,i)=>`<option value="${i}">${s.label} — Rs ${Number(s.price||0)}</option>`).join('');
         modSize.value = String(CURRENT.sizeIndex);
-      } else {
-        sizeChoice.style.display = 'none';
-      }
+      } else { sizeChoice.style.display = 'none'; }
 
       // Flavours
       if (CURRENT.flavours.length){
         flavourChoice.style.display = '';
         modFlavour.innerHTML = CURRENT.flavours.map((f,i)=>`<option value="${i}">${f.label}</option>`).join('');
         modFlavour.value = String(CURRENT.flavourIndex);
-      } else {
-        flavourChoice.style.display = 'none';
-      }
+      } else { flavourChoice.style.display = 'none'; }
 
       // Toppings
       if (CURRENT.toppings.length){
@@ -257,9 +305,7 @@
             <span>${t.label} <span class="muted">(Rs ${Number(t.price||0)})</span></span>
           </label>
         `).join('');
-      } else {
-        toppingsChoice.style.display = 'none';
-      }
+      } else { toppingsChoice.style.display = 'none'; }
 
       modQty.textContent = '1';
       recalc();
@@ -269,7 +315,6 @@
 
     modSize.addEventListener('change', () => { CURRENT.sizeIndex = Number(modSize.value||0); recalc(); });
     modFlavour.addEventListener('change', () => { CURRENT.flavourIndex = Number(modFlavour.value||0); });
-
     modToppings.addEventListener('change', (e) => {
       if (!e.target || !e.target.dataset.top) return;
       const idx = Number(e.target.dataset.top);
@@ -295,7 +340,7 @@
       modTotal.textContent = total;
     }
 
-    // ------ Cart ------
+    // ---------- Cart ----------
     let CART = [];
     function addToCartLine(line){ CART.push(line); renderCart(); }
     function renderCart(){
@@ -357,7 +402,7 @@
       toggleCart();
     }
 
-    // ------ Checkout (push to RTDB /orders) ------
+    // ---------- Checkout (push order to RTDB /orders) ----------
     async function checkout(){
       if (!CART.length) return alert('Cart is empty!');
       const name = (document.getElementById('customer-name')||{}).value?.trim();
@@ -384,7 +429,7 @@
       } catch(e){ alert(e.message); }
     }
 
-    // expose
+    // expose for buttons
     window.openModal = openModal;
     window.closeModal = closeModal;
     window.changeQty = changeQty;
@@ -395,7 +440,7 @@
     window.decQty = decQty;
     window.removeLine = removeLine;
 
-    document.addEventListener('DOMContentLoaded', loadShop);
+    document.addEventListener('DOMContentLoaded', loadAll);
   </script>
 </body>
 </html>
