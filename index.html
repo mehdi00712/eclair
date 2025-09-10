@@ -10,25 +10,6 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="style.css"/>
-
-  <style>
-    /* Keep your existing behaviors */
-    .nav-links { display: flex; list-style: none; }
-    .nav-links.show { display: block; }
-
-    .overlay p#greeting {
-      font-size: 1.5rem; margin: 0.5rem 0; color: #fff;
-      transition: opacity 1s ease; opacity: 0;
-    }
-    .overlay p#greeting.show { opacity: 1; }
-
-    .map-fullwidth a {
-      display: inline-block; text-align: center; margin: 15px auto 0; padding: 10px 20px;
-      background-color: #d84f6c; color: #fff; font-weight: bold; text-decoration: none;
-      border-radius: 6px; font-size: 1.1rem;
-    }
-    .map-fullwidth a:hover { background-color: #6d3349; }
-  </style>
 </head>
 <body>
 
@@ -49,9 +30,9 @@
   <!-- Hero Section -->
   <header class="hero">
     <div class="hero-images">
-      <img src="1.jpg" alt="Pastry 1">
-      <img src="2.jpg" alt="Pastry 2">
-      <img src="3.jpg" alt="Pastry 3">
+      <img src="1.jpg" alt="Pastry 1" loading="lazy">
+      <img src="2.jpg" alt="Pastry 2" loading="lazy">
+      <img src="3.jpg" alt="Pastry 3" loading="lazy">
     </div>
 
     <div class="overlay">
@@ -73,18 +54,18 @@
 
   <!-- Decorative Images -->
   <div class="decor-img">
-    <img src="6.jpg" alt="Pastries">
-    <img src="8.jpg" alt="Pastries">
-    <img src="3.jpg" alt="Pastries">
+    <img src="6.jpg" alt="Pastries" loading="lazy">
+    <img src="8.jpg" alt="Pastries" loading="lazy">
+    <img src="3.jpg" alt="Pastries" loading="lazy">
   </div>
 
   <!-- Menu (Specialties) -->
   <section id="menu">
     <h2>Our Specialties</h2>
     <div class="menu-items">
-      <div class="item"><img src="5.jpg" alt="Cookies"></div>
-      <div class="item"><img src="10.jpg" alt="Éclair"></div>
-      <div class="item"><img src="9.jpg" alt="Croissant"></div>
+      <div class="item"><img src="5.jpg" alt="Cookies" loading="lazy"></div>
+      <div class="item"><img src="10.jpg" alt="Éclair" loading="lazy"></div>
+      <div class="item"><img src="9.jpg" alt="Croissant" loading="lazy"></div>
     </div>
     <a href="menu.html" class="btn">View Full Menu</a>
   </section>
@@ -92,7 +73,7 @@
   <!-- Featured Products (live) -->
   <section id="featured">
     <h2>Featured Products</h2>
-    <p>Updated by admin — refresh-free 🔄</p>
+    <!-- removed the text line per your request -->
     <div id="featured-grid" class="products-grid"></div>
     <a href="menu.html#shop" class="btn">Shop All</a>
   </section>
@@ -113,9 +94,9 @@
 
   <!-- Decorative Images -->
   <div class="decor-img">
-    <img src="outside1.jpg" alt="Exterior">
-    <img src="inside.jpg" alt="Interior">
-    <img src="inside3.jpg" alt="Interior">
+    <img src="outside1.jpg" alt="Exterior" loading="lazy">
+    <img src="inside.jpg" alt="Interior" loading="lazy">
+    <img src="inside3.jpg" alt="Interior" loading="lazy">
   </div>
 
   <!-- Contact / Social Links -->
@@ -170,11 +151,12 @@
       window.__DB__ = firebase.database();
     })();
 
+    function currency(n){ return Number(n||0); }
+
     function loadFeaturedProducts(limit = 6) {
       const grid = document.getElementById('featured-grid');
       if (!grid || !window.__DB__) return;
 
-      // Show a tiny placeholder while loading
       grid.innerHTML = '<div style="opacity:.6;">Loading…</div>';
 
       window.__DB__.ref('products').once('value').then(snap => {
@@ -184,19 +166,26 @@
           .sort((a,b)=> (b.createdAt||0)-(a.createdAt||0))
           .slice(0, limit);
 
-        if (items.length === 0) {
+        if (!items.length) {
           grid.innerHTML = '<p style="opacity:.7;">No featured products yet.</p>';
           return;
         }
 
-        grid.innerHTML = items.map(p => `
-          <div class="product-card">
-            <img src="${p.image||''}" alt="${p.name||''}">
-            <h4>${p.name||''}</h4>
-            <p class="price">Rs ${Number(p.price||0)}</p>
-            <a href="menu.html#shop" class="btn">Order</a>
-          </div>
-        `).join('');
+        grid.innerHTML = items.map(p => {
+          const hasSizes = Array.isArray(p.sizes) && p.sizes.length;
+          const fromPrice = hasSizes
+            ? Math.min(...p.sizes.map(s => Number(s.price||0)))
+            : Number(p.basePrice || 0);
+
+          return `
+            <div class="product-card">
+              <img src="${p.image||''}" alt="${p.name||''}" loading="lazy">
+              <h4>${p.name||''}</h4>
+              <p class="price">${hasSizes ? 'From ' : ''}Rs ${currency(fromPrice)}</p>
+              <a href="menu.html#shop" class="btn" style="margin-top:auto;">Order</a>
+            </div>
+          `;
+        }).join('');
       }).catch(err => {
         console.error(err);
         grid.innerHTML = '<p style="color:#c00;">Could not load featured items.</p>';
