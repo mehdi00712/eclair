@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css"/>
 
-  <!-- Gate: hide protected UI until authenticated as admin -->
+  <!-- Gate: hide protected UI until authenticated as allowed admin -->
   <style>
     .admin-gate { display: none; }
     body.admin-auth .admin-gate { display: block; }
@@ -33,11 +33,12 @@
     </ul>
   </nav>
 
+  <!-- Hamburger + UI helpers -->
   <script src="script.js" defer></script>
 
   <main style="padding:20px; padding-top:80px; max-width:1100px; margin:0 auto;">
 
-    <!-- AUTH (visible when logged out / not admin) -->
+    <!-- AUTH (visible when logged out / not allowed) -->
     <div class="card" id="authBox">
       <h1>Admin — Éclaïr</h1>
       <h2>Sign in</h2>
@@ -50,7 +51,7 @@
       </div>
     </div>
 
-    <!-- DASHBOARD (only when admin) -->
+    <!-- DASHBOARD (only when allowed admin) -->
     <div id="dash" class="admin-gate">
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -154,6 +155,12 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.database();
 
+// ===== ALLOWED ADMIN UIDs (only these two) =====
+const ALLOWED_UIDS = new Set([
+  'RhMAQ5ey7zYdRLwtr5fxjqVrfgN2',
+  'uufregjJNyXeLfjZ9bb0Aj8kzSh1'
+]);
+
 // ===== Cloudinary upload (unsigned) =====
 const CLOUDINARY_CLOUD = "dicwpp1ux";
 const CLOUDINARY_UNSIGNED_PRESET = "uufregjJNyXeLfjZ9bb0Aj8kzSh1";
@@ -170,14 +177,6 @@ async function uploadToCloudinary(file) {
 }
 
 // ===== DOM refs =====
-const authBox = document.getElementById('authBox');
-const dash = document.getElementById('dash');
-
-const email = document.getElementById('email');
-const password = document.getElementById('password');
-const btnLogin = document.getElementById('btnLogin');
-const btnSignOut = document.getElementById('btnSignOut');
-
 const pName = document.getElementById('pName');
 const pBasePrice = document.getElementById('pBasePrice');
 const pCategory = document.getElementById('pCategory');
@@ -190,6 +189,11 @@ const btnCancelEdit = document.getElementById('btnCancelEdit');
 const filterCategory = document.getElementById('filterCategory');
 const tbodyProducts = document.getElementById('tbodyProducts');
 const formTitle = document.getElementById('formTitle');
+
+const email = document.getElementById('email');
+const password = document.getElementById('password');
+const btnLogin = document.getElementById('btnLogin');
+const btnSignOut = document.getElementById('btnSignOut');
 
 let editingKey = null;
 let productsRef = null;
@@ -297,7 +301,7 @@ function wipeAllUI() {
   pImageFile.value = ''; pPreview.src = '';
 }
 
-// ===== Attach / Detach Realtime listener (only when admin) =====
+// ===== Attach / Detach Realtime listener (only when allowed admin) =====
 function attachProductsListener() {
   detachProductsListener();
   productsRef = db.ref('products').orderByChild('createdAt');
@@ -318,25 +322,15 @@ function detachProductsListener() {
   productsRef = null; productsHandler = null;
 }
 
-// ===== Auth Gate (admin-only) =====
-async function isUserAdmin(uid) {
-  try {
-    const snap = await db.ref('admins/' + uid).get();
-    return snap.exists() && !!snap.val();
-  } catch {
-    return false;
-  }
-}
-
+// ===== Auth Gate (UID allowlist) =====
 function lockDownUI() {
   document.body.classList.remove('admin-auth');
   detachProductsListener();
   wipeAllUI();
 }
 
-async function unlockIfAdmin(user) {
-  const admin = await isUserAdmin(user.uid);
-  if (!admin) {
+async function unlockIfAllowed(user) {
+  if (!ALLOWED_UIDS.has(user.uid)) {
     await auth.signOut();
     alert('You have no right to access it.');
     return;
@@ -346,26 +340,23 @@ async function unlockIfAdmin(user) {
 }
 
 auth.onAuthStateChanged(async (user) => {
-  if (user) { await unlockIfAdmin(user); }
+  if (user) { await unlockIfAllowed(user); }
   else { lockDownUI(); }
 });
 
 // ===== Actions =====
-document.getElementById('btnLogin').onclick = async () => {
+btnLogin.onclick = async () => {
   const em = (email.value || '').trim();
   const pw = (password.value || '');
   if (!em || !pw) { alert('You have no right to access it.'); return; }
-
   try {
-    const { user } = await auth.signInWithEmailAndPassword(em, pw);
-    // onAuthStateChanged will handle admin check
+    await auth.signInWithEmailAndPassword(em, pw);
+    // onAuthStateChanged will perform UID allowlist check
   } catch (e) {
-    // Do NOT reveal which part was wrong
     alert('You have no right to access it.');
   }
 };
-
-document.getElementById('btnSignOut').onclick = () => auth.signOut();
+btnSignOut.onclick = () => auth.signOut();
 
 // ===== Image preview & filters =====
 pImageFile.onchange = () => {
@@ -375,10 +366,9 @@ pImageFile.onchange = () => {
   reader.onload = e => pPreview.src = e.target.result;
   reader.readAsDataURL(file);
 };
-
 filterCategory.onchange = () => attachProductsListener();
 
-// ===== Save product (admin only; rules will enforce too) =====
+// ===== Save product (rules still enforce server-side) =====
 btnSave.onclick = async () => {
   try {
     const name = pName.value.trim();
@@ -418,6 +408,5 @@ btnSave.onclick = async () => {
 // Initial lockdown (no flash)
 lockDownUI();
 </script>
-</main>
 </body>
 </html>
