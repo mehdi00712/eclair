@@ -10,23 +10,29 @@
   <style>
     body { font-family:'Alice', serif; padding:20px; background:#fdf7f9; }
     header.navbar { margin-bottom: 12px; }
-    .card { background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.08); padding:16px; max-width:1100px; margin:0 auto 16px; }
+    .card { background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.08); padding:16px; max-width:1200px; margin:0 auto 16px; }
     .row { display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; }
     .row-3 { display:grid; grid-template-columns: 2fr 1fr 1fr; gap:12px; }
     input, select, button { font-family:inherit; }
     input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:10px; }
-    button { padding:10px 16px; border:none; border-radius:12px; cursor:pointer; }
+    button { padding:10px 14px; border:none; border-radius:12px; cursor:pointer; }
     .btn { background:#f78da7; color:#fff; }
     .btn.muted { background:#eee; color:#333; }
-    .btn.danger { background:#e74c3c; }
+    .btn.danger { background:#e74c3c; color:#fff; }
+    .btn.small { padding:6px 10px; border-radius:10px; }
     .pill { display:inline-block; padding:4px 10px; border-radius:999px; background:#ffe6ee; color:#c94f66; font-weight:600; font-size:12px; }
     .right { text-align:right; }
     table { width:100%; border-collapse:collapse; }
     th,td { border-bottom:1px solid #eee; padding:10px; vertical-align:top; text-align:left; }
     .preview { max-width:120px; border-radius:10px; display:block; }
     .hide { display:none; }
-    .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    .grid-2 { display:grid; grid-template-columns: 1.2fr 0.8fr; gap:16px; }
     .muted { color:#777; }
+    .list { display:grid; gap:8px; margin-top:8px; }
+    .list .row-line { display:grid; grid-template-columns: 1fr 120px 36px; gap:8px; align-items:center; }
+    .list .row-line.flavour { grid-template-columns: 1fr 36px; }
+    .list label { font-size:0.9rem; color:#555; }
+    .section { border:1px dashed #e9c0cc; border-radius:12px; padding:10px; margin-top:12px; background:#fff8fa; }
   </style>
 
   <!-- Firebase (compat) -->
@@ -77,10 +83,11 @@
 
     <div class="grid-2" style="margin-top:12px;">
       <div>
-        <h3 id="formTitle">Add new product</h3>
+        <h3 id="formTitle">Add / Edit product</h3>
+
         <div class="row-3">
           <input id="pName" placeholder="Name"/>
-          <input id="pPrice" type="number" placeholder="Price (Rs)"/>
+          <input id="pBasePrice" type="number" placeholder="Base Price (Rs)"/>
           <select id="pCategory">
             <option>Pastries</option><option>Cakes</option><option>Drinks</option>
             <option>Sparkling</option><option>Iced Tea</option><option>Tea</option>
@@ -99,17 +106,44 @@
           <img id="pPreview" class="preview" alt="">
         </div>
 
-        <div style="display:flex; gap:8px; margin-top:10px;">
+        <!-- Sizes -->
+        <div class="section">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h4 style="margin:0;">Sizes (optional)</h4>
+            <button class="btn small" type="button" id="btnAddSize">+ Add size</button>
+          </div>
+          <div class="list" id="sizesList"></div>
+          <p class="muted" style="margin:6px 0 0;">If defined, the selected size price will be used instead of base price.</p>
+        </div>
+
+        <!-- Flavours -->
+        <div class="section">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h4 style="margin:0;">Flavours (optional)</h4>
+            <button class="btn small" type="button" id="btnAddFlavour">+ Add flavour</button>
+          </div>
+          <div class="list" id="flavoursList"></div>
+        </div>
+
+        <!-- Toppings -->
+        <div class="section">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h4 style="margin:0;">Toppings (optional)</h4>
+            <button class="btn small" type="button" id="btnAddTopping">+ Add topping</button>
+          </div>
+          <div class="list" id="toppingsList"></div>
+          <p class="muted" style="margin:6px 0 0;">Toppings add to the price.</p>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:12px;">
           <button class="btn" id="btnSave">Save</button>
           <button class="btn muted hide" id="btnCancelEdit">Cancel edit</button>
         </div>
-
-        <p class="muted" style="margin-top:8px;">Uploads use Cloudinary unsigned preset. Paste a URL or pick a file.</p>
       </div>
 
       <div>
         <h3>Tips</h3>
-        <p class="muted">Set the product <b>Visible</b> to show on the website. Changes appear instantly.</p>
+        <p class="muted">Use Sizes for S/M/L pricing. Use Flavours for taste-only choice. Add Toppings with prices.</p>
       </div>
     </div>
 
@@ -149,8 +183,6 @@ async function uploadToCloudinary(file) {
   const form = new FormData();
   form.append("file", file);
   form.append("upload_preset", CLOUDINARY_UNSIGNED_PRESET);
-  // Optional folder:
-  // form.append("folder", "menu");
   const res = await fetch(url, { method: "POST", body: form });
   if (!res.ok) throw new Error("Cloudinary upload failed");
   const data = await res.json();
@@ -169,7 +201,7 @@ const btnCreate = document.getElementById('btnCreate');
 const btnSignOut = document.getElementById('btnSignOut');
 
 const pName = document.getElementById('pName');
-const pPrice = document.getElementById('pPrice');
+const pBasePrice = document.getElementById('pBasePrice');
 const pCategory = document.getElementById('pCategory');
 const pImageUrl = document.getElementById('pImageUrl');
 const pImageFile = document.getElementById('pImageFile');
@@ -183,9 +215,48 @@ const formTitle = document.getElementById('formTitle');
 
 let editingKey = null;
 
-/* =========================
-   Auth
-   ========================= */
+// Dynamic lists
+const sizesList = document.getElementById('sizesList');
+const flavoursList = document.getElementById('flavoursList');
+const toppingsList = document.getElementById('toppingsList');
+document.getElementById('btnAddSize').onclick = () => addSizeRow();
+document.getElementById('btnAddFlavour').onclick = () => addFlavourRow();
+document.getElementById('btnAddTopping').onclick = () => addToppingRow();
+
+function addSizeRow(size = {label:'', price:''}) {
+  const row = document.createElement('div');
+  row.className = 'row-line';
+  row.innerHTML = `
+    <input placeholder="Size label (e.g., Small)" value="${size.label||''}">
+    <input type="number" placeholder="Price (Rs)" value="${size.price||''}">
+    <button class="btn danger small" type="button">✕</button>
+  `;
+  row.querySelector('button').onclick = () => row.remove();
+  sizesList.appendChild(row);
+}
+function addFlavourRow(flavour = {label:''}) {
+  const row = document.createElement('div');
+  row.className = 'row-line flavour';
+  row.innerHTML = `
+    <input placeholder="Flavour label (e.g., Vanilla)" value="${flavour.label||''}">
+    <button class="btn danger small" type="button">✕</button>
+  `;
+  row.querySelector('button').onclick = () => row.remove();
+  flavoursList.appendChild(row);
+}
+function addToppingRow(topping = {label:'', price:''}) {
+  const row = document.createElement('div');
+  row.className = 'row-line';
+  row.innerHTML = `
+    <input placeholder="Topping label (e.g., Whipped cream)" value="${topping.label||''}">
+    <input type="number" placeholder="Price (Rs)" value="${topping.price||''}">
+    <button class="btn danger small" type="button">✕</button>
+  `;
+  row.querySelector('button').onclick = () => row.remove();
+  toppingsList.appendChild(row);
+}
+
+// Auth
 auth.onAuthStateChanged(user => {
   if (user) {
     authBox.classList.add('hide');
@@ -196,7 +267,6 @@ auth.onAuthStateChanged(user => {
     authBox.classList.remove('hide');
   }
 });
-
 btnLogin.onclick = async () => {
   try { await auth.signInWithEmailAndPassword(email.value.trim(), password.value); }
   catch (e) { alert(e.message); }
@@ -207,9 +277,7 @@ btnCreate.onclick = async () => {
 };
 btnSignOut.onclick = () => auth.signOut();
 
-/* =========================
-   Image preview
-   ========================= */
+// Image preview
 pImageFile.onchange = () => {
   const file = pImageFile.files?.[0];
   if (!file) return;
@@ -218,27 +286,62 @@ pImageFile.onchange = () => {
   reader.readAsDataURL(file);
 };
 
+// Helpers
+function getSizesFromUI(){
+  return Array.from(sizesList.querySelectorAll('.row-line')).map(r => {
+    const [labelEl, priceEl] = r.querySelectorAll('input');
+    const label = labelEl.value.trim();
+    const price = Number(priceEl.value || 0);
+    return label ? { label, price } : null;
+  }).filter(Boolean);
+}
+function getFlavoursFromUI(){
+  return Array.from(flavoursList.querySelectorAll('.row-line')).map(r => {
+    const [labelEl] = r.querySelectorAll('input');
+    const label = labelEl.value.trim();
+    return label ? { label } : null;
+  }).filter(Boolean);
+}
+function getToppingsFromUI(){
+  return Array.from(toppingsList.querySelectorAll('.row-line')).map(r => {
+    const [labelEl, priceEl] = r.querySelectorAll('input');
+    const label = labelEl.value.trim();
+    const price = Number(priceEl.value || 0);
+    return label ? { label, price } : null;
+  }).filter(Boolean);
+}
+
+function setListsUI(p){
+  sizesList.innerHTML = '';
+  (p.sizes||[]).forEach(addSizeRow);
+  flavoursList.innerHTML = '';
+  (p.flavours||[]).forEach(addFlavourRow);
+  toppingsList.innerHTML = '';
+  (p.toppings||[]).forEach(addToppingRow);
+}
+
 function clearForm() {
   editingKey = null;
-  formTitle.textContent = 'Add new product';
+  formTitle.textContent = 'Add / Edit product';
   pName.value = '';
-  pPrice.value = '';
+  pBasePrice.value = '';
   pCategory.value = 'Pastries';
   pImageUrl.value = '';
   pImageFile.value = '';
   pPreview.src = '';
   pVisible.checked = true;
+  sizesList.innerHTML = '';
+  flavoursList.innerHTML = '';
+  toppingsList.innerHTML = '';
   btnCancelEdit.classList.add('hide');
 }
 btnCancelEdit.onclick = clearForm;
 
-/* =========================
-   Save (add / edit)
-   ========================= */
+// Save (add/edit)
 btnSave.onclick = async () => {
   try {
     const name = pName.value.trim();
-    const price = Number(pPrice.value || 0);
+    const basePrice = Number(pBasePrice.value || 0);
     const category = pCategory.value;
     const visible = pVisible.checked;
     if (!name) return alert('Name is required');
@@ -247,7 +350,16 @@ btnSave.onclick = async () => {
     const file = pImageFile.files?.[0];
     if (file) image = await uploadToCloudinary(file);
 
-    const data = { name, price, category, image: image || '', visible, updatedAt: Date.now() };
+    const sizes = getSizesFromUI();
+    const flavours = getFlavoursFromUI();
+    const toppings = getToppingsFromUI();
+
+    const data = {
+      name, basePrice, category, image: image || '',
+      sizes, flavours, toppings, visible,
+      updatedAt: Date.now()
+    };
+
     if (editingKey) {
       await db.ref(`products/${editingKey}`).update(data);
     } else {
@@ -258,12 +370,14 @@ btnSave.onclick = async () => {
   } catch (e) { alert(e.message); }
 };
 
-/* =========================
-   List / Edit / Delete
-   ========================= */
+// List / edit / delete
 filterCategory.onchange = () => loadProducts();
 
 function renderRow(key, p) {
+  const priceText = (p.sizes && p.sizes.length)
+    ? ('Sizes: ' + p.sizes.map(s=>`${s.label} Rs ${s.price}`).join(', '))
+    : ('Base Rs ' + Number(p.basePrice||0));
+
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>
@@ -272,11 +386,13 @@ function renderRow(key, p) {
         <div>
           <div style="font-weight:700">${p.name || ''}</div>
           <div class="muted" style="max-width:420px;word-break:break-all;">${p.image || 'No image'}</div>
+          <div class="muted">Flavours: ${(p.flavours||[]).map(f=>f.label).join(', ') || '—'}</div>
+          <div class="muted">Toppings: ${(p.toppings||[]).map(t=>`${t.label} (Rs ${t.price})`).join(', ') || '—'}</div>
         </div>
       </div>
     </td>
     <td><span class="pill">${p.category || '-'}</span></td>
-    <td>Rs ${Number(p.price||0)}</td>
+    <td>${priceText}</td>
     <td>${p.visible ? 'Yes' : 'No'}</td>
     <td class="right">
       <button class="btn muted" data-edit="${key}">Edit</button>
@@ -288,11 +404,12 @@ function renderRow(key, p) {
     editingKey = key;
     formTitle.textContent = 'Edit product';
     pName.value = p.name || '';
-    pPrice.value = Number(p.price || 0);
+    pBasePrice.value = Number(p.basePrice || 0);
     pCategory.value = p.category || 'Pastries';
     pImageUrl.value = p.image || '';
     pPreview.src = p.image || '';
     pVisible.checked = !!p.visible;
+    setListsUI(p);
     btnCancelEdit.classList.remove('hide');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
