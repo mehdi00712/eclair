@@ -15,8 +15,10 @@
 <body>
   <!-- Navbar -->
   <nav>
-    <div class="logo"><a href="index.html" aria-label="Éclaïr Home"><img src="logo.jpg" alt="Éclaïr logo"></a></div>
-    <button class="menu-toggle" aria-label="Toggle Menu">&#9776;</button>
+    <div class="logo">
+      <a href="index.html" aria-label="Éclaïr Home"><img src="logo.jpg" alt="Éclaïr logo"></a>
+    </div>
+    <button class="menu-toggle" aria-label="Toggle Menu" aria-expanded="false">&#9776;</button>
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
       <li><a href="menu.html">Menu</a></li>
@@ -24,7 +26,8 @@
     </ul>
   </nav>
 
-  <script src="script.js" defer></script>
+  <!-- Hamburger + UI helpers -->
+  <script src="script.js"></script>
 
   <main style="padding:20px;">
     <h1>Admin — Éclaïr</h1>
