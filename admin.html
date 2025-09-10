@@ -7,156 +7,127 @@
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css"/>
 
-  <style>
-    body { font-family:'Alice', serif; padding:20px; background:#fdf7f9; }
-    header.navbar { margin-bottom: 12px; }
-    .card { background:#fff; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.08); padding:16px; max-width:1200px; margin:0 auto 16px; }
-    .row { display:grid; grid-template-columns: repeat(2, 1fr); gap:12px; }
-    .row-3 { display:grid; grid-template-columns: 2fr 1fr 1fr; gap:12px; }
-    input, select, button { font-family:inherit; }
-    input, select { width:100%; padding:10px; border:1px solid #ddd; border-radius:10px; }
-    button { padding:10px 14px; border:none; border-radius:12px; cursor:pointer; }
-    .btn { background:#f78da7; color:#fff; }
-    .btn.muted { background:#eee; color:#333; }
-    .btn.danger { background:#e74c3c; color:#fff; }
-    .btn.small { padding:6px 10px; border-radius:10px; }
-    .pill { display:inline-block; padding:4px 10px; border-radius:999px; background:#ffe6ee; color:#c94f66; font-weight:600; font-size:12px; }
-    .right { text-align:right; }
-    table { width:100%; border-collapse:collapse; }
-    th,td { border-bottom:1px solid #eee; padding:10px; vertical-align:top; text-align:left; }
-    .preview { max-width:120px; border-radius:10px; display:block; }
-    .hide { display:none; }
-    .grid-2 { display:grid; grid-template-columns: 1.2fr 0.8fr; gap:16px; }
-    .muted { color:#777; }
-    .list { display:grid; gap:8px; margin-top:8px; }
-    .list .row-line { display:grid; grid-template-columns: 1fr 120px 36px; gap:8px; align-items:center; }
-    .list .row-line.flavour { grid-template-columns: 1fr 36px; }
-    .list label { font-size:0.9rem; color:#555; }
-    .section { border:1px dashed #e9c0cc; border-radius:12px; padding:10px; margin-top:12px; background:#fff8fa; }
-  </style>
-
   <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
-  <header class="navbar">
-    <div class="logo"><a href="index.html">Éclaïr</a></div>
+  <!-- Navbar -->
+  <nav>
+    <div class="logo"><a href="index.html" aria-label="Éclaïr Home"><img src="logo.jpg" alt="Éclaïr logo"></a></div>
+    <button class="menu-toggle" aria-label="Toggle Menu">&#9776;</button>
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
       <li><a href="menu.html">Menu</a></li>
       <li><a class="active" href="admin.html">Admin</a></li>
     </ul>
-  </header>
+  </nav>
 
-  <h1>Admin — Éclaïr</h1>
+  <script src="script.js" defer></script>
 
-  <!-- AUTH -->
-  <div class="card" id="authBox">
-    <h2>Sign in</h2>
-    <div class="row">
-      <input type="email" id="email" placeholder="Admin email"/>
-      <input type="password" id="password" placeholder="Password"/>
-    </div>
-    <div style="margin-top:10px; display:flex; gap:8px;">
-      <button class="btn" id="btnLogin">Sign in</button>
-      <!-- Use once, then remove/comment -->
-      <button class="btn muted" id="btnCreate">Create admin (once)</button>
-    </div>
-  </div>
+  <main style="padding:20px;">
+    <h1>Admin — Éclaïr</h1>
 
-  <!-- DASHBOARD -->
-  <div class="card hide" id="dash">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h2 style="margin:0;">Products</h2>
-      <div style="display:flex; gap:8px;">
-        <select id="filterCategory">
-          <option value="">All categories</option>
-          <option>Pastries</option><option>Cakes</option><option>Drinks</option>
-          <option>Sparkling</option><option>Iced Tea</option><option>Tea</option>
-          <option>Coffee</option><option>Iced Coffee</option>
-        </select>
-        <button class="btn muted" id="btnSignOut">Sign out</button>
+    <!-- AUTH -->
+    <div class="card" id="authBox">
+      <h2>Sign in</h2>
+      <div class="row">
+        <input type="email" id="email" placeholder="Admin email"/>
+        <input type="password" id="password" placeholder="Password"/>
+      </div>
+      <div style="margin-top:10px; display:flex; gap:8px;">
+        <button class="btn" id="btnLogin">Sign in</button>
+        <button class="btn muted" id="btnCreate">Create admin (once)</button>
       </div>
     </div>
 
-    <div class="grid-2" style="margin-top:12px;">
-      <div>
-        <h3 id="formTitle">Add / Edit product</h3>
-
-        <div class="row-3">
-          <input id="pName" placeholder="Name"/>
-          <input id="pBasePrice" type="number" placeholder="Base Price (Rs)"/>
-          <select id="pCategory">
+    <!-- DASHBOARD -->
+    <div class="card hide" id="dash">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <h2 style="margin:0;">Products</h2>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <select id="filterCategory">
+            <option value="">All categories</option>
             <option>Pastries</option><option>Cakes</option><option>Drinks</option>
             <option>Sparkling</option><option>Iced Tea</option><option>Tea</option>
             <option>Coffee</option><option>Iced Coffee</option>
           </select>
-        </div>
-
-        <div class="row" style="margin-top:10px;">
-          <input id="pImageUrl" placeholder="Image URL (or upload below)"/>
-          <label class="pill"><input type="checkbox" id="pVisible" checked/> Visible</label>
-        </div>
-
-        <!-- Cloudinary upload (unsigned) -->
-        <div class="row" style="margin-top:10px;">
-          <input type="file" id="pImageFile" accept="image/*"/>
-          <img id="pPreview" class="preview" alt="">
-        </div>
-
-        <!-- Sizes -->
-        <div class="section">
-          <div style="display:flex; align-items:center; justify-content:space-between;">
-            <h4 style="margin:0;">Sizes (optional)</h4>
-            <button class="btn small" type="button" id="btnAddSize">+ Add size</button>
-          </div>
-          <div class="list" id="sizesList"></div>
-          <p class="muted" style="margin:6px 0 0;">If defined, the selected size price will be used instead of base price.</p>
-        </div>
-
-        <!-- Flavours -->
-        <div class="section">
-          <div style="display:flex; align-items:center; justify-content:space-between;">
-            <h4 style="margin:0;">Flavours (optional)</h4>
-            <button class="btn small" type="button" id="btnAddFlavour">+ Add flavour</button>
-          </div>
-          <div class="list" id="flavoursList"></div>
-        </div>
-
-        <!-- Toppings -->
-        <div class="section">
-          <div style="display:flex; align-items:center; justify-content:space-between;">
-            <h4 style="margin:0;">Toppings (optional)</h4>
-            <button class="btn small" type="button" id="btnAddTopping">+ Add topping</button>
-          </div>
-          <div class="list" id="toppingsList"></div>
-          <p class="muted" style="margin:6px 0 0;">Toppings add to the price.</p>
-        </div>
-
-        <div style="display:flex; gap:8px; margin-top:12px;">
-          <button class="btn" id="btnSave">Save</button>
-          <button class="btn muted hide" id="btnCancelEdit">Cancel edit</button>
+          <button class="btn muted" id="btnSignOut">Sign out</button>
         </div>
       </div>
 
-      <div>
-        <h3>Tips</h3>
-        <p class="muted">Use Sizes for S/M/L pricing. Use Flavours for taste-only choice. Add Toppings with prices.</p>
+      <div class="grid-2" style="margin-top:12px;">
+        <div>
+          <h3 id="formTitle">Add / Edit product</h3>
+
+          <div class="row-3">
+            <input id="pName" placeholder="Name"/>
+            <input id="pBasePrice" type="number" placeholder="Base Price (Rs)"/>
+            <select id="pCategory">
+              <option>Pastries</option><option>Cakes</option><option>Drinks</option>
+              <option>Sparkling</option><option>Iced Tea</option><option>Tea</option>
+              <option>Coffee</option><option>Iced Coffee</option>
+            </select>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <input id="pImageUrl" placeholder="Image URL (or upload below)"/>
+            <label class="pill"><input type="checkbox" id="pVisible" checked/> Visible</label>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <input type="file" id="pImageFile" accept="image/*"/>
+            <img id="pPreview" class="preview" alt="">
+          </div>
+
+          <div class="section">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <h4 style="margin:0;">Sizes (optional)</h4>
+              <button class="btn small" type="button" id="btnAddSize">+ Add size</button>
+            </div>
+            <div class="list" id="sizesList"></div>
+            <p class="muted" style="margin:6px 0 0;">If defined, selected size price overrides base price.</p>
+          </div>
+
+          <div class="section">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <h4 style="margin:0;">Flavours (optional)</h4>
+              <button class="btn small" type="button" id="btnAddFlavour">+ Add flavour</button>
+            </div>
+            <div class="list" id="flavoursList"></div>
+          </div>
+
+          <div class="section">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <h4 style="margin:0;">Toppings (optional)</h4>
+              <button class="btn small" type="button" id="btnAddTopping">+ Add topping</button>
+            </div>
+            <div class="list" id="toppingsList"></div>
+            <p class="muted" style="margin:6px 0 0;">Toppings add to the price.</p>
+          </div>
+
+          <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+            <button class="btn" id="btnSave">Save</button>
+            <button class="btn muted hide" id="btnCancelEdit">Cancel edit</button>
+          </div>
+        </div>
+
+        <div>
+          <h3>Tips</h3>
+          <p class="muted">Use Sizes for S/M/L pricing. Flavours for taste-only choice. Toppings add price.</p>
+        </div>
       </div>
+
+      <table style="margin-top:12px;">
+        <thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Visible</th><th class="right">Actions</th></tr></thead>
+        <tbody id="tbodyProducts"></tbody>
+      </table>
     </div>
-
-    <table style="margin-top:12px;">
-      <thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Visible</th><th class="right">Actions</th></tr></thead>
-      <tbody id="tbodyProducts"></tbody>
-    </table>
-  </div>
+  </main>
 
 <script>
-/* =========================
-   Firebase (AUTH + RTDB)
-   ========================= */
+// Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDnYlw01KhjWRXLhatnr9fFcXA4Q_zOs10",
   authDomain: "eclair-501b7.firebaseapp.com",
@@ -171,12 +142,9 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.database();
 
-/* =========================
-   Cloudinary (unsigned)
-   ========================= */
+// Cloudinary
 const CLOUDINARY_CLOUD = "dicwpp1ux";
 const CLOUDINARY_UNSIGNED_PRESET = "uufregjJNyXeLfjZ9bb0Aj8kzSh1";
-
 async function uploadToCloudinary(file) {
   if (!file) return "";
   const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/upload`;
@@ -189,9 +157,7 @@ async function uploadToCloudinary(file) {
   return data.secure_url || data.url;
 }
 
-/* =========================
-   DOM & State
-   ========================= */
+// DOM
 const authBox = document.getElementById('authBox');
 const dash = document.getElementById('dash');
 const email = document.getElementById('email');
@@ -215,7 +181,7 @@ const formTitle = document.getElementById('formTitle');
 
 let editingKey = null;
 
-// Dynamic list
+// Dynamic lists
 const sizesList = document.getElementById('sizesList');
 const flavoursList = document.getElementById('flavoursList');
 const toppingsList = document.getElementById('toppingsList');
@@ -258,23 +224,11 @@ function addToppingRow(topping = {label:'', price:''}) {
 
 // Auth
 auth.onAuthStateChanged(user => {
-  if (user) {
-    authBox.classList.add('hide');
-    dash.classList.remove('hide');
-    loadProducts();
-  } else {
-    dash.classList.add('hide');
-    authBox.classList.remove('hide');
-  }
+  if (user) { authBox.classList.add('hide'); dash.classList.remove('hide'); loadProducts(); }
+  else { dash.classList.add('hide'); authBox.classList.remove('hide'); }
 });
-btnLogin.onclick = async () => {
-  try { await auth.signInWithEmailAndPassword(email.value.trim(), password.value); }
-  catch (e) { alert(e.message); }
-};
-btnCreate.onclick = async () => {
-  try { await auth.createUserWithEmailAndPassword(email.value.trim(), password.value); alert('Admin created. You can sign in now.'); }
-  catch (e) { alert(e.message); }
-};
+btnLogin.onclick = async () => { try { await auth.signInWithEmailAndPassword(email.value.trim(), password.value); } catch(e){ alert(e.message); } };
+btnCreate.onclick = async () => { try { await auth.createUserWithEmailAndPassword(email.value.trim(), password.value); alert('Admin created. You can sign in now.'); } catch(e){ alert(e.message); } };
 btnSignOut.onclick = () => auth.signOut();
 
 // Image preview
@@ -287,57 +241,40 @@ pImageFile.onchange = () => {
 };
 
 // Helpers
-function getSizesFromUI(){
-  return Array.from(sizesList.querySelectorAll('.row-line')).map(r => {
-    const [labelEl, priceEl] = r.querySelectorAll('input');
-    const label = labelEl.value.trim();
-    const price = Number(priceEl.value || 0);
-    return label ? { label, price } : null;
-  }).filter(Boolean);
-}
-function getFlavoursFromUI(){
-  return Array.from(flavoursList.querySelectorAll('.row-line')).map(r => {
-    const [labelEl] = r.querySelectorAll('input');
-    const label = labelEl.value.trim();
-    return label ? { label } : null;
-  }).filter(Boolean);
-}
-function getToppingsFromUI(){
-  return Array.from(toppingsList.querySelectorAll('.row-line')).map(r => {
-    const [labelEl, priceEl] = r.querySelectorAll('input');
-    const label = labelEl.value.trim();
-    const price = Number(priceEl.value || 0);
-    return label ? { label, price } : null;
-  }).filter(Boolean);
-}
+function getSizesFromUI(){ return Array.from(sizesList.querySelectorAll('.row-line')).map(r => {
+  const [labelEl, priceEl] = r.querySelectorAll('input');
+  const label = labelEl.value.trim();
+  const price = Number(priceEl.value || 0);
+  return label ? { label, price } : null;
+}).filter(Boolean); }
+function getFlavoursFromUI(){ return Array.from(flavoursList.querySelectorAll('.row-line')).map(r => {
+  const [labelEl] = r.querySelectorAll('input');
+  const label = labelEl.value.trim();
+  return label ? { label } : null;
+}).filter(Boolean); }
+function getToppingsFromUI(){ return Array.from(toppingsList.querySelectorAll('.row-line')).map(r => {
+  const [labelEl, priceEl] = r.querySelectorAll('input');
+  const label = labelEl.value.trim();
+  const price = Number(priceEl.value || 0);
+  return label ? { label, price } : null;
+}).filter(Boolean); }
 
 function setListsUI(p){
-  sizesList.innerHTML = '';
-  (p.sizes||[]).forEach(addSizeRow);
-  flavoursList.innerHTML = '';
-  (p.flavours||[]).forEach(addFlavourRow);
-  toppingsList.innerHTML = '';
-  (p.toppings||[]).forEach(addToppingRow);
+  sizesList.innerHTML = ''; (p.sizes||[]).forEach(addSizeRow);
+  flavoursList.innerHTML = ''; (p.flavours||[]).forEach(addFlavourRow);
+  toppingsList.innerHTML = ''; (p.toppings||[]).forEach(addToppingRow);
 }
 
 function clearForm() {
-  editingKey = null;
-  formTitle.textContent = 'Add / Edit product';
-  pName.value = '';
-  pBasePrice.value = '';
-  pCategory.value = 'Pastries';
-  pImageUrl.value = '';
-  pImageFile.value = '';
-  pPreview.src = '';
-  pVisible.checked = true;
-  sizesList.innerHTML = '';
-  flavoursList.innerHTML = '';
-  toppingsList.innerHTML = '';
+  editingKey = null; formTitle.textContent = 'Add / Edit product';
+  pName.value = ''; pBasePrice.value = ''; pCategory.value = 'Pastries';
+  pImageUrl.value = ''; pImageFile.value = ''; pPreview.src = '';
+  pVisible.checked = true; sizesList.innerHTML = ''; flavoursList.innerHTML = ''; toppingsList.innerHTML = '';
   btnCancelEdit.classList.add('hide');
 }
 btnCancelEdit.onclick = clearForm;
 
-// Save (add/edit)
+// Save
 btnSave.onclick = async () => {
   try {
     const name = pName.value.trim();
@@ -354,30 +291,19 @@ btnSave.onclick = async () => {
     const flavours = getFlavoursFromUI();
     const toppings = getToppingsFromUI();
 
-    const data = {
-      name, basePrice, category, image: image || '',
-      sizes, flavours, toppings, visible,
-      updatedAt: Date.now()
-    };
-
-    if (editingKey) {
-      await db.ref(`products/${editingKey}`).update(data);
-    } else {
-      data.createdAt = Date.now();
-      await db.ref('products').push(data);
-    }
+    const data = { name, basePrice, category, image: image || '', sizes, flavours, toppings, visible, updatedAt: Date.now() };
+    if (editingKey) { await db.ref(`products/${editingKey}`).update(data); }
+    else { data.createdAt = Date.now(); await db.ref('products').push(data); }
     clearForm();
   } catch (e) { alert(e.message); }
 };
 
-// List / edit / delete
+// Table
 filterCategory.onchange = () => loadProducts();
-
 function renderRow(key, p) {
   const priceText = (p.sizes && p.sizes.length)
     ? ('Sizes: ' + p.sizes.map(s=>`${s.label} Rs ${s.price}`).join(', '))
     : ('Base Rs ' + Number(p.basePrice||0));
-
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>
@@ -399,39 +325,26 @@ function renderRow(key, p) {
       <button class="btn danger" data-del="${key}">Delete</button>
     </td>
   `;
-
   tr.querySelector(`[data-edit="${key}"]`).onclick = () => {
-    editingKey = key;
-    formTitle.textContent = 'Edit product';
-    pName.value = p.name || '';
-    pBasePrice.value = Number(p.basePrice || 0);
-    pCategory.value = p.category || 'Pastries';
-    pImageUrl.value = p.image || '';
-    pPreview.src = p.image || '';
-    pVisible.checked = !!p.visible;
-    setListsUI(p);
-    btnCancelEdit.classList.remove('hide');
+    editingKey = key; formTitle.textContent = 'Edit product';
+    pName.value = p.name || ''; pBasePrice.value = Number(p.basePrice || 0);
+    pCategory.value = p.category || 'Pastries'; pImageUrl.value = p.image || ''; pPreview.src = p.image || '';
+    pVisible.checked = !!p.visible; setListsUI(p); btnCancelEdit.classList.remove('hide');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
   tr.querySelector(`[data-del="${key}"]`).onclick = async () => {
     if (!confirm('Delete this product?')) return;
     await db.ref(`products/${key}`).remove();
   };
-
   return tr;
 }
-
 function loadProducts() {
   const cat = filterCategory.value;
   db.ref('products').orderByChild('createdAt').on('value', snap => {
     tbodyProducts.innerHTML = '';
     const obj = snap.val() || {};
     const entries = Object.entries(obj).sort((a,b)=> (b[1].createdAt||0) - (a[1].createdAt||0));
-    for (const [key, p] of entries) {
-      if (cat && p.category !== cat) continue;
-      tbodyProducts.appendChild(renderRow(key, p));
-    }
+    for (const [key, p] of entries) { if (cat && p.category !== cat) continue; tbodyProducts.appendChild(renderRow(key, p)); }
   });
 }
 </script>
