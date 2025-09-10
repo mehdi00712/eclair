@@ -7,12 +7,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css"/>
 
+  <!-- Gate: hide protected UI until authenticated -->
+  <style>
+    /* Nothing in .admin-gate is rendered unless body has .admin-auth */
+    .admin-gate { display: none; }
+    body.admin-auth .admin-gate { display: block; }
+    /* Auth card hidden when authed */
+    body.admin-auth #authBox { display: none !important; }
+  </style>
+
   <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
-<body>
+<body class="admin-locked">
   <!-- Navbar -->
   <nav>
     <div class="logo">
@@ -27,41 +36,43 @@
   </nav>
 
   <!-- Hamburger + UI helpers -->
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 
-  <main style="padding:20px;">
-    <h1>Admin — Éclaïr</h1>
+  <main style="padding:20px; padding-top:80px; max-width:1100px; margin:0 auto;">
 
-    <!-- AUTH -->
+    <!-- AUTH (always visible when logged out) -->
     <div class="card" id="authBox">
+      <h1>Admin — Éclaïr</h1>
       <h2>Sign in</h2>
       <div class="row">
-        <input type="email" id="email" placeholder="Admin email"/>
-        <input type="password" id="password" placeholder="Password"/>
+        <input type="email" id="email" placeholder="Admin email" autocomplete="username"/>
+        <input type="password" id="password" placeholder="Password" autocomplete="current-password"/>
       </div>
-      <div style="margin-top:10px; display:flex; gap:8px;">
+      <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn" id="btnLogin">Sign in</button>
-        <button class="btn muted" id="btnCreate">Create admin (once)</button>
+        <button class="btn muted" id="btnCreate" title="Create an admin account (use once, then disable)">Create admin (once)</button>
       </div>
     </div>
 
-    <!-- DASHBOARD -->
-    <div class="card hide" id="dash">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-        <h2 style="margin:0;">Products</h2>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <select id="filterCategory">
-            <option value="">All categories</option>
-            <option>Pastries</option><option>Cakes</option><option>Drinks</option>
-            <option>Sparkling</option><option>Iced Tea</option><option>Tea</option>
-            <option>Coffee</option><option>Iced Coffee</option>
-          </select>
-          <button class="btn muted" id="btnSignOut">Sign out</button>
+    <!-- DASHBOARD (hidden until authed) -->
+    <div id="dash" class="admin-gate">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <h2 style="margin:0;">Products</h2>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <select id="filterCategory">
+              <option value="">All categories</option>
+              <option>Pastries</option><option>Cakes</option><option>Drinks</option>
+              <option>Sparkling</option><option>Iced Tea</option><option>Tea</option>
+              <option>Coffee</option><option>Iced Coffee</option>
+            </select>
+            <button class="btn muted" id="btnSignOut">Sign out</button>
+          </div>
         </div>
       </div>
 
-      <div class="grid-2" style="margin-top:12px;">
-        <div>
+      <div class="grid-2">
+        <div class="card">
           <h3 id="formTitle">Add / Edit product</h3>
 
           <div class="row-3">
@@ -116,21 +127,23 @@
           </div>
         </div>
 
-        <div>
+        <div class="card">
           <h3>Tips</h3>
           <p class="muted">Use Sizes for S/M/L pricing. Flavours for taste-only choice. Toppings add price.</p>
         </div>
       </div>
 
-      <table style="margin-top:12px;">
-        <thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Visible</th><th class="right">Actions</th></tr></thead>
-        <tbody id="tbodyProducts"></tbody>
-      </table>
+      <div class="card">
+        <table>
+          <thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Visible</th><th class="right">Actions</th></tr></thead>
+          <tbody id="tbodyProducts"></tbody>
+        </table>
+      </div>
     </div>
   </main>
 
 <script>
-// Firebase
+// ===== Firebase init =====
 const firebaseConfig = {
   apiKey: "AIzaSyDnYlw01KhjWRXLhatnr9fFcXA4Q_zOs10",
   authDomain: "eclair-501b7.firebaseapp.com",
@@ -145,7 +158,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.database();
 
-// Cloudinary
+// ===== Cloudinary upload (unsigned) =====
 const CLOUDINARY_CLOUD = "dicwpp1ux";
 const CLOUDINARY_UNSIGNED_PRESET = "uufregjJNyXeLfjZ9bb0Aj8kzSh1";
 async function uploadToCloudinary(file) {
@@ -160,9 +173,10 @@ async function uploadToCloudinary(file) {
   return data.secure_url || data.url;
 }
 
-// DOM
+// ===== DOM refs =====
 const authBox = document.getElementById('authBox');
 const dash = document.getElementById('dash');
+
 const email = document.getElementById('email');
 const password = document.getElementById('password');
 const btnLogin = document.getElementById('btnLogin');
@@ -183,11 +197,14 @@ const tbodyProducts = document.getElementById('tbodyProducts');
 const formTitle = document.getElementById('formTitle');
 
 let editingKey = null;
+let productsRef = null;   // will hold active listener ref
+let productsHandler = null;
 
-// Dynamic lists
+// ===== Dynamic list helpers =====
 const sizesList = document.getElementById('sizesList');
 const flavoursList = document.getElementById('flavoursList');
 const toppingsList = document.getElementById('toppingsList');
+
 document.getElementById('btnAddSize').onclick = () => addSizeRow();
 document.getElementById('btnAddFlavour').onclick = () => addFlavourRow();
 document.getElementById('btnAddTopping').onclick = () => addToppingRow();
@@ -225,40 +242,18 @@ function addToppingRow(topping = {label:'', price:''}) {
   toppingsList.appendChild(row);
 }
 
-// Auth
-auth.onAuthStateChanged(user => {
-  if (user) { authBox.classList.add('hide'); dash.classList.remove('hide'); loadProducts(); }
-  else { dash.classList.add('hide'); authBox.classList.remove('hide'); }
-});
-btnLogin.onclick = async () => { try { await auth.signInWithEmailAndPassword(email.value.trim(), password.value); } catch(e){ alert(e.message); } };
-btnCreate.onclick = async () => { try { await auth.createUserWithEmailAndPassword(email.value.trim(), password.value); alert('Admin created. You can sign in now.'); } catch(e){ alert(e.message); } };
-btnSignOut.onclick = () => auth.signOut();
-
-// Image preview
-pImageFile.onchange = () => {
-  const file = pImageFile.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => pPreview.src = e.target.result;
-  reader.readAsDataURL(file);
-};
-
-// Helpers
 function getSizesFromUI(){ return Array.from(sizesList.querySelectorAll('.row-line')).map(r => {
   const [labelEl, priceEl] = r.querySelectorAll('input');
-  const label = labelEl.value.trim();
-  const price = Number(priceEl.value || 0);
+  const label = labelEl.value.trim(); const price = Number(priceEl.value || 0);
   return label ? { label, price } : null;
 }).filter(Boolean); }
 function getFlavoursFromUI(){ return Array.from(flavoursList.querySelectorAll('.row-line')).map(r => {
-  const [labelEl] = r.querySelectorAll('input');
-  const label = labelEl.value.trim();
+  const [labelEl] = r.querySelectorAll('input'); const label = labelEl.value.trim();
   return label ? { label } : null;
 }).filter(Boolean); }
 function getToppingsFromUI(){ return Array.from(toppingsList.querySelectorAll('.row-line')).map(r => {
   const [labelEl, priceEl] = r.querySelectorAll('input');
-  const label = labelEl.value.trim();
-  const price = Number(priceEl.value || 0);
+  const label = labelEl.value.trim(); const price = Number(priceEl.value || 0);
   return label ? { label, price } : null;
 }).filter(Boolean); }
 
@@ -275,34 +270,7 @@ function clearForm() {
   pVisible.checked = true; sizesList.innerHTML = ''; flavoursList.innerHTML = ''; toppingsList.innerHTML = '';
   btnCancelEdit.classList.add('hide');
 }
-btnCancelEdit.onclick = clearForm;
 
-// Save
-btnSave.onclick = async () => {
-  try {
-    const name = pName.value.trim();
-    const basePrice = Number(pBasePrice.value || 0);
-    const category = pCategory.value;
-    const visible = pVisible.checked;
-    if (!name) return alert('Name is required');
-
-    let image = pImageUrl.value.trim();
-    const file = pImageFile.files?.[0];
-    if (file) image = await uploadToCloudinary(file);
-
-    const sizes = getSizesFromUI();
-    const flavours = getFlavoursFromUI();
-    const toppings = getToppingsFromUI();
-
-    const data = { name, basePrice, category, image: image || '', sizes, flavours, toppings, visible, updatedAt: Date.now() };
-    if (editingKey) { await db.ref(`products/${editingKey}`).update(data); }
-    else { data.createdAt = Date.now(); await db.ref('products').push(data); }
-    clearForm();
-  } catch (e) { alert(e.message); }
-};
-
-// Table
-filterCategory.onchange = () => loadProducts();
 function renderRow(key, p) {
   const priceText = (p.sizes && p.sizes.length)
     ? ('Sizes: ' + p.sizes.map(s=>`${s.label} Rs ${s.price}`).join(', '))
@@ -341,15 +309,127 @@ function renderRow(key, p) {
   };
   return tr;
 }
-function loadProducts() {
-  const cat = filterCategory.value;
-  db.ref('products').orderByChild('createdAt').on('value', snap => {
-    tbodyProducts.innerHTML = '';
+
+function wipeTable() { tbodyProducts.innerHTML = ''; }
+function wipeAllUI() {
+  clearForm(); wipeTable();
+  filterCategory.value = '';
+  pImageFile.value = ''; pPreview.src = '';
+}
+
+// ===== Secure attach/detach of DB listeners =====
+function attachProductsListener() {
+  if (productsRef || productsHandler) detachProductsListener();
+  productsRef = db.ref('products').orderByChild('createdAt');
+  productsHandler = productsRef.on('value', snap => {
+    wipeTable();
     const obj = snap.val() || {};
+    const cat = filterCategory.value;
     const entries = Object.entries(obj).sort((a,b)=> (b[1].createdAt||0) - (a[1].createdAt||0));
-    for (const [key, p] of entries) { if (cat && p.category !== cat) continue; tbodyProducts.appendChild(renderRow(key, p)); }
+    for (const [key, p] of entries) {
+      if (cat && p.category !== cat) continue;
+      tbodyProducts.appendChild(renderRow(key, p));
+    }
   });
 }
+
+function detachProductsListener() {
+  if (productsRef && productsHandler) {
+    productsRef.off('value', productsHandler);
+  } else if (productsRef) {
+    productsRef.off();
+  }
+  productsRef = null; productsHandler = null;
+}
+
+// ===== Auth gate =====
+function lockDownUI() {
+  // Hide protected area, show auth, clear everything, detach listeners
+  document.body.classList.remove('admin-auth');
+  detachProductsListener();
+  wipeAllUI();
+}
+function unlockUI() {
+  // Show protected area, hide auth, attach listeners
+  document.body.classList.add('admin-auth');
+  attachProductsListener();
+}
+
+auth.onAuthStateChanged(user => {
+  if (user) { unlockUI(); }
+  else { lockDownUI(); }
+});
+
+// ===== Auth actions =====
+btnLogin.onclick = async () => {
+  try {
+    await auth.signInWithEmailAndPassword(email.value.trim(), password.value);
+  } catch(e){ alert(e.message); }
+};
+
+btnCreate.onclick = async () => {
+  try {
+    await auth.createUserWithEmailAndPassword(email.value.trim(), password.value);
+    alert('Admin created. You can sign in now.');
+  } catch(e){ alert(e.message); }
+};
+
+btnSignOut && (btnSignOut.onclick = () => auth.signOut());
+
+// ===== Image preview + filter change =====
+pImageFile.onchange = () => {
+  const file = pImageFile.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => pPreview.src = e.target.result;
+  reader.readAsDataURL(file);
+};
+
+filterCategory.onchange = () => {
+  // Re-render table from current snapshot by reattaching (simple and safe)
+  attachProductsListener();
+};
+
+// ===== Save product =====
+btnSave.onclick = async () => {
+  try {
+    const name = pName.value.trim();
+    const basePrice = Number(pBasePrice.value || 0);
+    const category = pCategory.value;
+    const visible = pVisible.checked;
+    if (!name) return alert('Name is required');
+
+    let image = pImageUrl.value.trim();
+    const file = pImageFile.files?.[0];
+    if (file) image = await uploadToCloudinary(file);
+
+    const sizes = Array.from(sizesList.querySelectorAll('.row-line')).map(r => {
+      const [l, pr] = r.querySelectorAll('input'); const label = l.value.trim(); const price = Number(pr.value || 0);
+      return label ? { label, price } : null;
+    }).filter(Boolean);
+
+    const flavours = Array.from(flavoursList.querySelectorAll('.row-line')).map(r => {
+      const [l] = r.querySelectorAll('input'); const label = l.value.trim();
+      return label ? { label } : null;
+    }).filter(Boolean);
+
+    const toppings = Array.from(toppingsList.querySelectorAll('.row-line')).map(r => {
+      const [l, pr] = r.querySelectorAll('input'); const label = l.value.trim(); const price = Number(pr.value || 0);
+      return label ? { label, price } : null;
+    }).filter(Boolean);
+
+    const data = { name, basePrice, category, image: image || '', sizes, flavours, toppings, visible, updatedAt: Date.now() };
+    if (editingKey) { await db.ref(`products/${editingKey}`).update(data); }
+    else { data.createdAt = Date.now(); await db.ref('products').push(data); }
+    clearForm();
+  } catch (e) { alert(e.message); }
+};
+
+// Extra safety: ensure locked state at start
+lockDownUI();
+
+// Detach listeners on unload
+window.addEventListener('beforeunload', detachProductsListener);
 </script>
 </body>
 </html>
