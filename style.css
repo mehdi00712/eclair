@@ -32,7 +32,6 @@ nav {
   max-width: calc(100vw - 140px);
 }
 .nav-links::-webkit-scrollbar { display: none; }
-
 .nav-links li a {
   text-decoration: none; font-weight: 600; color: white;
   padding: 8px 14px; border-radius: 20px; white-space: nowrap;
@@ -65,7 +64,7 @@ nav {
 body.nav-open { overflow: hidden; }
 
 /* ===========================
-   Hero
+   Hero (index)
 =========================== */
 header { padding-top: var(--nav-h); }
 .hero {
@@ -106,10 +105,7 @@ header { padding-top: var(--nav-h); }
 }
 .btn:hover { background: #f25c7f; }
 .btn.small { padding: 6px 12px; border-radius: 14px; }
-.btn.icon {
-  width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
-  padding: 0; border-radius: 999px;
-}
+.btn.icon { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 999px; }
 .btn.muted { background: #e6b8c6; }
 .btn.danger { background: #e74c3c; }
 .btn.danger:hover { background: #c0392b; }
@@ -134,10 +130,7 @@ section { padding: 50px 15px; text-align: center; max-width: 900px; margin: 0 au
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
   width: 100%; max-width: 220px; transition: transform 0.3s;
 }
-.item img {
-  width: 100%; border-radius: 10px; margin-bottom: 10px;
-  /* initial reveal state handled below in .decor-img img */
-}
+.item img { width: 100%; border-radius: 10px; margin-bottom: 10px; }
 .item:hover { transform: translateY(-5px); }
 
 /* Decorative images reveal */
@@ -189,13 +182,31 @@ footer { padding: 15px; text-align: center; background: rgba(0, 0, 0, 0.05); }
   padding: 12px; display: flex; flex-direction: column; transition: transform 0.2s ease;
 }
 .product-card:hover { transform: translateY(-4px); }
-.product-card img {
-  width: 100%; height: 160px; object-fit: cover; border-radius: 12px; margin-bottom: 10px;
-}
+.product-card img { width: 100%; height: 160px; object-fit: cover; border-radius: 12px; margin-bottom: 10px; }
 .product-card h4 { margin: 6px 0 2px; }
 .product-card p { margin: 0 0 8px; }
 .product-card .price { font-weight: 700; color: #c94f66; margin-bottom: 8px; }
 .product-card .btn { margin-top: auto; display: block; width: 100%; }
+
+/* ===========================
+   INDEX: Featured sizing fix
+=========================== */
+#featured-grid.products-grid {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+}
+#featured-grid .product-card img { height: 130px; }
+#featured-grid .product-card h4 { font-size: 1rem; }
+#featured-grid .product-card .price { font-size: 0.95rem; margin-bottom: 6px; }
+#featured-grid .product-card .btn {
+  padding: 8px 12px; font-size: 0.9rem; border-radius: 12px; line-height: 1.15;
+  width: 100%; display: block; margin-top: auto; white-space: nowrap;
+}
+@media (max-width: 380px) {
+  #featured-grid.products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #featured-grid .product-card img { height: 110px; }
+  #featured-grid .product-card .btn { padding: 6px 10px; font-size: 0.85rem; }
+}
 
 /* ===========================
    Chips (Menu Categories)
@@ -221,6 +232,27 @@ footer { padding: 15px; text-align: center; background: rgba(0, 0, 0, 0.05); }
 .category-block .products-grid { margin-top: 10px; }
 
 /* ===========================
+   MENU Banner fixes
+   (Use .menu-hero in menu.html for the banner image,
+   and put your heading/intro in a separate .menu-intro block)
+=========================== */
+.menu-hero { padding: 0; max-width: 1100px; margin: 0 auto; }
+.menu-hero img {
+  width: 100%; height: clamp(180px, 36vw, 320px);
+  object-fit: cover; display: block; border-radius: 12px;
+}
+.menu-intro { max-width: 900px; margin: 12px auto 24px; padding: 0 15px; }
+.menu-intro h1 { margin: 0 0 6px; color: #c94f66; }
+.menu-intro p { margin: 6px 0 0; }
+
+/* If you had an .overlay inside the banner on menu,
+   this forces it to be BELOW instead of on top of the image */
+.menu-hero .overlay {
+  position: static; transform: none; background: transparent; color: inherit;
+  padding: 0; margin-top: 10px;
+}
+
+/* ===========================
    Cart (floating / bottom-sheet)
 =========================== */
 #cart {
@@ -228,11 +260,18 @@ footer { padding: 15px; text-align: center; background: rgba(0, 0, 0, 0.05); }
   width:360px; max-height:90vh; overflow:auto; box-shadow:0 4px 18px rgba(0,0,0,.15);
   display:none; z-index:999;
 }
-.cart-item {
-  display:flex; justify-content:space-between; gap:8px; margin-bottom:8px; align-items:center;
-}
+.cart-item { display:flex; justify-content:space-between; gap:8px; margin-bottom:8px; align-items:center; }
+
+/* Smaller cart on mobile */
 @media (max-width: 768px){
-  #cart { left:0; right:0; top:auto; bottom:0; width:100%; max-height:70vh; border-radius:16px 16px 0 0; }
+  #cart {
+    left:0; right:0; top:auto; bottom:0; width:100%;
+    max-height:58vh;           /* was 70vh */
+    border-radius:16px 16px 0 0;
+    padding:12px; padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+  #cart .cart-item { font-size: 0.95rem; }
+  #cart .btn { padding: 8px 12px; }
 }
 
 /* ===========================
