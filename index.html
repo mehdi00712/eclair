@@ -7,43 +7,6 @@
 
   <!-- Google Fonts: Alice -->
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
-
-  <!-- Main CSS -->
-  <link rel="stylesheet" href="style.css"/>
-
-  <style>
-    /* Featured buttons: ensure they never overlap, and cards keep nice height */
-    #featured-grid .product-card {
-      display: flex;
-      flex-direction: column;
-      min-height: 280px;               /* keeps consistent card height */
-    }
-    #featured-grid .product-card img {
-      height: 130px;                   /* shorter image so content fits */
-      object-fit: cover;
-    }
-    #featured-grid .product-card .btn {
-      margin-top: auto;                /* sticks button at the bottom */
-      display: block;
-      width: 100%;
-      padding: 8px 12px;
-      font-size: 0.9rem;
-      border-radius: 12px;
-      white-space: nowrap;
-    }
-    @media (max-width: 380px) {
-      #featured-grid .product-card img { height: 110px; }
-      #featured-grid .product-card .btn { padding: 6px 10px; font-size: 0.85rem; }
-    }
-
-    /* “Open in Google Maps” button style remains */
-    .map-fullwidth a {
-      display: inline-block; text-align: center; margin: 15px auto 0; padding: 10px 20px;
-      background-color: #d84f6c; color: #fff; font-weight: bold; text-decoration: none;
-      border-radius: 6px; font-size: 1.05rem;
-    }
-    .map-fullwidth a:hover { background-color: #6d3349; }
-  </style>
 </head>
 <body>
 
