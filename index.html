@@ -8,8 +8,42 @@
   <!-- Google Fonts: Alice -->
   <link href="https://fonts.googleapis.com/css2?family=Alice&display=swap" rel="stylesheet">
 
-  <!-- CSS -->
+  <!-- Main CSS -->
   <link rel="stylesheet" href="style.css"/>
+
+  <style>
+    /* Featured buttons: ensure they never overlap, and cards keep nice height */
+    #featured-grid .product-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 280px;               /* keeps consistent card height */
+    }
+    #featured-grid .product-card img {
+      height: 130px;                   /* shorter image so content fits */
+      object-fit: cover;
+    }
+    #featured-grid .product-card .btn {
+      margin-top: auto;                /* sticks button at the bottom */
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+    @media (max-width: 380px) {
+      #featured-grid .product-card img { height: 110px; }
+      #featured-grid .product-card .btn { padding: 6px 10px; font-size: 0.85rem; }
+    }
+
+    /* “Open in Google Maps” button style remains */
+    .map-fullwidth a {
+      display: inline-block; text-align: center; margin: 15px auto 0; padding: 10px 20px;
+      background-color: #d84f6c; color: #fff; font-weight: bold; text-decoration: none;
+      border-radius: 6px; font-size: 1.05rem;
+    }
+    .map-fullwidth a:hover { background-color: #6d3349; }
+  </style>
 </head>
 <body>
 
@@ -30,9 +64,9 @@
   <!-- Hero Section -->
   <header class="hero">
     <div class="hero-images">
-      <img src="7.jpg" alt="Pastry 1" loading="lazy">
-      <img src="2.jpg" alt="Pastry 2" loading="lazy">
-      <img src="3.jpg" alt="Pastry 3" loading="lazy">
+      <img src="1.jpg" alt="Pastry 1">
+      <img src="2.jpg" alt="Pastry 2">
+      <img src="3.jpg" alt="Pastry 3">
     </div>
 
     <div class="overlay">
@@ -54,18 +88,18 @@
 
   <!-- Decorative Images -->
   <div class="decor-img">
-    <img src="6.jpg" alt="Pastries" loading="lazy">
-    <img src="8.jpg" alt="Pastries" loading="lazy">
-    <img src="3.jpg" alt="Pastries" loading="lazy">
+    <img src="6.jpg" alt="Pastries">
+    <img src="8.jpg" alt="Pastries">
+    <img src="3.jpg" alt="Pastries">
   </div>
 
   <!-- Menu (Specialties) -->
   <section id="menu">
     <h2>Our Specialties</h2>
     <div class="menu-items">
-      <div class="item"><img src="5.jpg" alt="Cookies" loading="lazy"></div>
-      <div class="item"><img src="10.jpg" alt="Éclair" loading="lazy"></div>
-      <div class="item"><img src="9.jpg" alt="Croissant" loading="lazy"></div>
+      <div class="item"><img src="5.jpg" alt="Cookies"></div>
+      <div class="item"><img src="10.jpg" alt="Éclair"></div>
+      <div class="item"><img src="9.jpg" alt="Croissant"></div>
     </div>
     <a href="menu.html" class="btn">View Full Menu</a>
   </section>
@@ -73,7 +107,7 @@
   <!-- Featured Products (live) -->
   <section id="featured">
     <h2>Featured Products</h2>
-    <!-- removed the extra text line -->
+    <!-- removed the “updated by admin — refresh-free” line as requested -->
     <div id="featured-grid" class="products-grid"></div>
     <a href="menu.html#shop" class="btn">Shop All</a>
   </section>
@@ -94,9 +128,9 @@
 
   <!-- Decorative Images -->
   <div class="decor-img">
-    <img src="outside1.jpg" alt="Exterior" loading="lazy">
-    <img src="inside.jpg" alt="Interior" loading="lazy">
-    <img src="inside3.jpg" alt="Interior" loading="lazy">
+    <img src="outside1.jpg" alt="Exterior">
+    <img src="inside.jpg" alt="Interior">
+    <img src="inside3.jpg" alt="Interior">
   </div>
 
   <!-- Contact / Social Links -->
@@ -110,14 +144,10 @@
     </div>
   </section>
 
-  <!-- Full-width Map -->
+  <!-- Map: replaced iframe with your image, kept the link -->
   <section class="map-fullwidth" style="position: relative; height: auto; overflow: hidden; text-align: center;">
-    <div style="width:100%; height:400px; position: relative;">
-      <iframe
-        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3885.798593618362!2d57.46667641534631!3d-20.23175878538808!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x217c5b007e587601%3A0x9c7b663d58b43cb!2s%C3%89cla%C3%AFr!5e0!3m2!1sen!2smu!4v1723808460660!5m2!1sen!2smu"
-        style="width:100%; height:100%; border:0; position: absolute; top:0; left:0;"
-        allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-      </iframe>
+    <div style="width:100%; position: relative;">
+      <img src="11111111.jpg" alt="Éclaïr Location Map" style="width:100%; height:auto; display:block; border-radius: 12px;">
     </div>
     <a href="https://www.google.com/maps/place/%C3%89cla%C3%AFr/@-20.2317384,57.4583981,15z/data=!3m1!4b1!4m6!3m5!1s0x217c5b007e587601:0x9c7b663d58b43cb!8m2!3d-20.2317588!4d57.4686764!16s%2Fg%2F11x0ddy63f?entry=ttu"
        target="_blank" rel="noopener">📍 Open in Google Maps</a>
@@ -127,10 +157,10 @@
     <p style="color: beige;">Éclaïr</p>
   </footer>
 
-  <!-- Your UI behaviors (hamburger, hero vh fix, etc.) -->
+  <!-- Your UI behaviors -->
   <script src="script.js"></script>
 
-  <!-- Firebase compat -->
+  <!-- Firebase compat (App + Database) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
@@ -151,8 +181,6 @@
       window.__DB__ = firebase.database();
     })();
 
-    function currency(n){ return Number(n||0); }
-
     function loadFeaturedProducts(limit = 6) {
       const grid = document.getElementById('featured-grid');
       if (!grid || !window.__DB__) return;
@@ -166,26 +194,19 @@
           .sort((a,b)=> (b.createdAt||0)-(a.createdAt||0))
           .slice(0, limit);
 
-        if (!items.length) {
+        if (items.length === 0) {
           grid.innerHTML = '<p style="opacity:.7;">No featured products yet.</p>';
           return;
         }
 
-        grid.innerHTML = items.map(p => {
-          const hasSizes = Array.isArray(p.sizes) && p.sizes.length;
-          const fromPrice = hasSizes
-            ? Math.min(...p.sizes.map(s => Number(s.price||0)))
-            : Number(p.basePrice || 0);
-
-          return `
-            <div class="product-card">
-              <img src="${p.image||''}" alt="${p.name||''}" loading="lazy">
-              <h4>${p.name||''}</h4>
-              <p class="price">${hasSizes ? 'From ' : ''}Rs ${currency(fromPrice)}</p>
-              <a href="menu.html#shop" class="btn">Order</a>
-            </div>
-          `;
-        }).join('');
+        grid.innerHTML = items.map(p => `
+          <div class="product-card">
+            <img src="${p.image||''}" alt="${p.name||''}">
+            <h4>${p.name||''}</h4>
+            <p class="price">Rs ${Number(p.basePrice || (p.sizes?.[0]?.price || 0))}</p>
+            <a href="menu.html#${encodeURIComponent(p.category || 'shop')}" class="btn">Order</a>
+          </div>
+        `).join('');
       }).catch(err => {
         console.error(err);
         grid.innerHTML = '<p style="color:#c00;">Could not load featured items.</p>';
