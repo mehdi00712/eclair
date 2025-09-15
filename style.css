@@ -369,3 +369,60 @@ th.right, td.right { text-align: right; }
    Misc
 =========================== */
 h1, h2, h3 { font-weight: normal; }
+
+/* ===== Featured cards polish (index only) ===== */
+#featured-grid.products-grid {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+#featured-grid .product-card {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 12px 14px;   /* side padding so button never hits the edges */
+  min-height: 300px;         /* consistent height across cards */
+}
+
+#featured-grid .product-card img {
+  height: 140px;             /* slightly shorter image so text+button fit */
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+#featured-grid .product-card h4 {
+  font-size: 1rem;
+  line-height: 1.25;
+  margin: 4px 0 2px;
+  min-height: 1.25em;        /* keeps titles aligned even if single line */
+  text-align: left;
+}
+
+#featured-grid .product-card .price {
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+  color: #c94f66;
+  text-align: left;
+}
+
+/* Make the button smaller and centered, with side gutters */
+#featured-grid .product-card .btn {
+  margin-top: auto;          /* pin to bottom of the card content */
+  align-self: center;        /* center horizontally */
+  width: 88%;                /* no touching the card edges */
+  max-width: 220px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  border-radius: 12px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+  #featured-grid.products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #featured-grid .product-card img { height: 118px; }
+  #featured-grid .product-card { min-height: 280px; }
+  #featured-grid .product-card .btn { padding: 6px 10px; font-size: 0.85rem; }
+}
+
